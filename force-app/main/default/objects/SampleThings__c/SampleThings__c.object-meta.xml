@@ -153,10 +153,10 @@
     <enableSharing>true</enableSharing>
     <enableStreamingApi>true</enableStreamingApi>
     <externalSharingModel>Private</externalSharingModel>
-    <label>Sample Things</label>
+    <label>Sample Thing</label>
+    <plurallabel>Sample Things</plurallabel>
     <nameField>
         <label>Sample Things Name</label>
-        <plurallabel>Sample Things Names</plurallabel>
         <type>Text</type>
     </nameField>
     <searchLayouts></searchLayouts>
