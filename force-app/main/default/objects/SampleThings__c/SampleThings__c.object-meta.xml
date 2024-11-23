@@ -156,7 +156,7 @@
     <label>Sample Things</label>
     <nameField>
         <label>Sample Things Name</label>
-        <plurallabel>Sample Things Name</plurallabel>
+        <plurallabel>Sample Things Names</plurallabel>
         <type>Text</type>
     </nameField>
     <searchLayouts></searchLayouts>
