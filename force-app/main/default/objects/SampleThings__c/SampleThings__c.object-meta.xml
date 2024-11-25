@@ -158,6 +158,7 @@
         <label>Sample Things Name</label>
         <type>Text</type>
     </nameField>
+    <pluralLabel>Sample Things</pluralLabel>
     <searchLayouts></searchLayouts>
     <sharingModel>ReadWrite</sharingModel>
     <visibility>Public</visibility>
