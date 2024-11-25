@@ -154,7 +154,6 @@
     <enableStreamingApi>true</enableStreamingApi>
     <externalSharingModel>Private</externalSharingModel>
     <label>Sample Thing</label>
-    <plurallabel>Sample Things</plurallabel>
     <nameField>
         <label>Sample Things Name</label>
         <type>Text</type>
