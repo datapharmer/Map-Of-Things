@@ -6,7 +6,6 @@
  */
 (function () {
 	var _old__setPos = L.Marker.prototype._setPos;
-	var L = window.L;
 	L.Marker.include({
 		_updateImg: function(i, a, s) {
 			a = L.point(s).divideBy(2)._subtract(L.point(a));
