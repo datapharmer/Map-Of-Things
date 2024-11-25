@@ -23,7 +23,7 @@
             <property name="targetGroup" type="String" label="Field API Name for Grouping" required="false" />
             <property name="whereClause" type="String" label="WHERE Clause" required="false" />
             <property name="iconSizeX" type="Integer" label="Width of Custom marker icon(px)" required="true" default="32" />
-            <property name="iconSizeY" type="Integer" label="Hieght of Custom marker icon(px)" required="true" default="32" />
+            <property name="iconSizeY" type="Integer" label="Height of Custom marker icon(px)" required="true" default="32" />
             <property name="markerRotate" type="Boolean" label="Dynamic rotation for custom marker icon" required="false" default="false" />
             <property name="moveDuration" type="Integer" label="Marker transition duration(millisecond)" required="true" default="3000" />
             <property name="autoFitBounds" type="Boolean" label="Fit bounds map on marker transition" required="false" default="true" />
