@@ -1,5 +1,12 @@
 import { LightningElement, api } from 'lwc';
+import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
+import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
+import LEAFLETADDON from '@salesforce/resourceUrl/leafletjs_marker_rotate_addon';
+import LEAFLETCUSTOM from '@salesforce/resourceUrl/leaflet_custom_css';
 
+
+const LEAFLET_CSS_URL = '/leaflet.css';
+const LEAFLET_JS_URL = '/leaflet.js';
 const EVENT_ZOOM_END = 'zoomend';
 const ROTATION_LEFT = 'left';
 const ROTATION_RIGHT = 'right';
