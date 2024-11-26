@@ -17,7 +17,7 @@ export default class MapOfThingsMarkers extends LightningElement {
     isMoving = false;
     initedLayerControl = false;
     layerControl;
-    layerGroup = L.layerGroup();
+    layerGroup = {};
 
     @api iconSizeX;
     @api iconSizeY;
