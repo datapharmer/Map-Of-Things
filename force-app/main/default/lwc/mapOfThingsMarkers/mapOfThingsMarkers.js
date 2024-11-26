@@ -81,6 +81,7 @@ export default class MapOfThingsMarkers extends LightningElement {
         this.initedLayerControl = true;
     }    
     initLayerGroup(newMarker){
+        let layerGroup = L.layerGroup();
         if (!this.useGrouping) return;
         const markerId = newMarker.id;
         const groupName = newMarker.group;
