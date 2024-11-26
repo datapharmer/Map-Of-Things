@@ -3,7 +3,7 @@ import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
 import LEAFLETADDON from '@salesforce/resourceUrl/leafletjs_marker_rotate_addon';
 import LEAFLETCUSTOM from '@salesforce/resourceUrl/leaflet_custom_css';
 //import * as L from "@salesforce/resourceUrl/leaflet-src.esm.js"
-globalThis.L = L
+//globalThis.L = L
 
 
 
