@@ -1,5 +1,4 @@
 import { LightningElement, api } from 'lwc';
-L = This.L;
 
 const EVENT_ZOOM_END = 'zoomend';
 const ROTATION_LEFT = 'left';
