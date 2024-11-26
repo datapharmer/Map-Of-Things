@@ -1,5 +1,4 @@
 import { LightningElement, api } from 'lwc';
-import * as L from "@salesforce/resourceUrl/leaflet-src.esm.js";
 globalThis.L = L;
 
 const EVENT_ZOOM_END = 'zoomend';
