@@ -3,7 +3,6 @@ import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
 import LEAFLETADDON from '@salesforce/resourceUrl/leafletjs_marker_rotate_addon';
 import LEAFLETCUSTOM from '@salesforce/resourceUrl/leaflet_custom_css';
-import "leaflet.markercluster";
 
 
 const LEAFLET_CSS_URL = '/leaflet.css';
@@ -12,6 +11,7 @@ const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.map-container';
 const CUSTOM_EVENT_INIT = 'init';
+const L = await import('leaflet');
 
 export default class MapOfThingsMap extends LightningElement {
 
