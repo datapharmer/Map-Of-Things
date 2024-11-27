@@ -61,7 +61,6 @@ export default class MapOfThingsMap extends LightningElement {
     }
     drawMap(){
         const container = this.template.querySelector(MAP_CONTAINER);
-        var L = window.L;
         this.map = L.map(container, { 
             zoomControl: true, tap:false   
         }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);    
