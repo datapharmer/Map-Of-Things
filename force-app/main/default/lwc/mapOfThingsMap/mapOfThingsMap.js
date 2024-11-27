@@ -11,7 +11,6 @@ const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.map-container';
 const CUSTOM_EVENT_INIT = 'init';
-const L = import('@salesforce/resourceUrl/leaflet');
 
 export default class MapOfThingsMap extends LightningElement {
 
@@ -62,6 +61,7 @@ export default class MapOfThingsMap extends LightningElement {
     }
     drawMap(){
         const container = this.template.querySelector(MAP_CONTAINER);
+        var L = window.L;
         this.map = L.map(container, { 
             zoomControl: true, tap:false   
         }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);    
