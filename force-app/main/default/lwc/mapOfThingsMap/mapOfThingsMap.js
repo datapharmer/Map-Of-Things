@@ -3,10 +3,16 @@ import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
 import LEAFLETADDON from '@salesforce/resourceUrl/leafletjs_marker_rotate_addon';
 import LEAFLETCUSTOM from '@salesforce/resourceUrl/leaflet_custom_css';
+import CATILINE from'@salesforce/resourceUrl/catiline.js';
+import SHPFILE from'@salesforce/resourceUrl/leaflet.shpfile.js';
+import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts.zip';
 
 
 const LEAFLET_CSS_URL = '/leaflet.css';
 const LEAFLET_JS_URL = '/leaflet.js';
+const CATILINE_JS_URL = '/catiline.js';
+const SHPFILE_JS_URL = '/leaflet.shpfile.js';
+const SCHOOLDISTRICTS_URL = '/schooldistricts.zip';
 const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.map-container';
@@ -53,7 +59,8 @@ export default class MapOfThingsMap extends LightningElement {
         Promise.all([
             loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
             loadStyle(this, LEAFLETCUSTOM),
-            loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
+            loadScript(this, CATILINE + CATILINE_JS_URL),
+            loadScript(this, SHPFILE + SHPFILE_JS_URL),
             loadScript(this, LEAFLETADDON)
         ]).then(() => {
             this.drawMap();
@@ -72,6 +79,17 @@ export default class MapOfThingsMap extends LightningElement {
         this.dispatchEvent(new CustomEvent(
             CUSTOM_EVENT_INIT, {detail: this.map}
         ));
+        this.shpfile = new L.Shapefile('SCHOOLDISTRICTS_URL', {
+			onEachFeature: function(feature, layer) {
+				if (feature.properties) {
+					layer.bindPopup(Object.keys(feature.properties).map(function(k) {
+						return k + ": " + feature.properties[k];
+					}).join("<br />"), {
+						maxHeight: 200
+					});
+				}
+			}
+		});
     }
     fitBounds(){
         if (this.markersExist) this.map.flyToBounds(this.bounds, {padding: FIT_BOUNDS_PADDING});
