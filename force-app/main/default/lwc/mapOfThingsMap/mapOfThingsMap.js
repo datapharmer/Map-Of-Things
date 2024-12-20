@@ -5,6 +5,7 @@ import LEAFLETADDON from '@salesforce/resourceUrl/leafletjs_marker_rotate_addon'
 import LEAFLETCUSTOM from '@salesforce/resourceUrl/leaflet_custom_css';
 import CATILINE from'@salesforce/resourceUrl/catiline.js';
 import SHPFILE from'@salesforce/resourceUrl/leaflet.shpfile.js';
+import SHP from '@salesforce/resourceUrl/shp.js';
 import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts.zip';
 
 
@@ -12,6 +13,7 @@ const LEAFLET_CSS_URL = '/leaflet.css';
 const LEAFLET_JS_URL = '/leaflet.js';
 const CATILINE_JS_URL = '/catiline.js';
 const SHPFILE_JS_URL = '/leaflet.shpfile.js';
+const SHP_JS_URL =  = '/shp.js';
 const SCHOOLDISTRICTS_URL = '/schooldistricts.zip';
 const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
@@ -61,6 +63,7 @@ export default class MapOfThingsMap extends LightningElement {
             loadStyle(this, LEAFLETCUSTOM),
             loadScript(this, CATILINE + CATILINE_JS_URL),
             loadScript(this, SHPFILE + SHPFILE_JS_URL),
+	    loadScript(this, SHP + SHP_JS_URL),
             loadScript(this, LEAFLETADDON)
         ]).then(() => {
             this.drawMap();
