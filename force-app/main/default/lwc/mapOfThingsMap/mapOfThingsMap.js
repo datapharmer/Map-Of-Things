@@ -90,6 +90,10 @@ export default class MapOfThingsMap extends LightningElement {
 				}
 			}
 		});
+	shpfile.addTo(m);
+		shpfile.once("data:loaded", function() {
+			console.log("finished loaded shapefile");
+		});
     }
     fitBounds(){
         if (this.markersExist) this.map.flyToBounds(this.bounds, {padding: FIT_BOUNDS_PADDING});
