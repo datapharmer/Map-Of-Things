@@ -3,10 +3,10 @@ import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
 import LEAFLETADDON from '@salesforce/resourceUrl/leafletjs_marker_rotate_addon';
 import LEAFLETCUSTOM from '@salesforce/resourceUrl/leaflet_custom_css';
-import CATILINE from'@salesforce/resourceUrl/catiline.js';
-import SHPFILE from'@salesforce/resourceUrl/leaflet.shpfile.js';
-import SHP from '@salesforce/resourceUrl/shp.js';
-import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts.zip';
+import CATILINE from'@salesforce/resourceUrl/catiline';
+import SHPFILE from'@salesforce/resourceUrl/leaflet.shpfile';
+import SHP from '@salesforce/resourceUrl/shp';
+import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts';
 
 
 const LEAFLET_CSS_URL = '/leaflet.css';
