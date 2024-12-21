@@ -13,7 +13,7 @@ const LEAFLET_CSS_URL = '/leaflet.css';
 const LEAFLET_JS_URL = '/leaflet.js';
 const CATILINE_JS_URL = '/catiline.js';
 const SHPFILE_JS_URL = '/leaflet.shpfile.js';
-const SHP_JS_URL =  = '/shp.js';
+const SHP_JS_URL = '/shp.js';
 const SCHOOLDISTRICTS_URL = '/schooldistricts.zip';
 const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
