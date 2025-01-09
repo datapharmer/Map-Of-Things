@@ -61,12 +61,11 @@ export default class MapOfThingsMap extends LightningElement {
     connectedCallback(){
         Promise.all([
             loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
-            loadStyle(this, LEAFLETCUSTOM),
 	    loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
-            loadScript(this, CATILINE_JS_URL),
-            loadScript(this, SHPFILE_JS_URL),
-	    loadScript(this, SHP_JS_URL),
-            loadScript(this, LEAFLETADDON_JS_URL)
+            loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
+            loadScript(this, LEAFLET_JS + SHPFILE_JS_URL),
+	    loadScript(this, LEAFLET_JS + SHP_JS_URL),
+            loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL)
         ]).then(() => {
             this.drawMap();
         });
