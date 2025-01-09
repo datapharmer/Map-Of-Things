@@ -83,7 +83,7 @@ export default class MapOfThingsMap extends LightningElement {
         this.dispatchEvent(new CustomEvent(
             CUSTOM_EVENT_INIT, {detail: this.map}
         ));
-        this.shpfile = new L.Shapefile(SCHOOLDISTRICTS_URL, {
+        var shpfile = new L.Shapefile(SCHOOLDISTRICTS_URL, {
 			onEachFeature: function(feature, layer) {
 				if (feature.properties) {
 					layer.bindPopup(Object.keys(feature.properties).map(function(k) {
