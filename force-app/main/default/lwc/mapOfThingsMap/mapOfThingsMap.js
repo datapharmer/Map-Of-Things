@@ -11,10 +11,12 @@ import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts';
 
 const LEAFLET_CSS_URL = '/leaflet.css';
 const LEAFLET_JS_URL = '/leaflet.js';
+const LEAFLETADDON_JS_URL = '/leafletjs_marker_rotate_addon.js';
 const CATILINE_JS_URL = '/catiline.js';
 const SHPFILE_JS_URL = '/leaflet.shpfile.js';
 const SHP_JS_URL = '/shp.js';
 const SCHOOLDISTRICTS_URL = '/schooldistricts.zip';
+constant
 const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.map-container';
@@ -62,10 +64,10 @@ export default class MapOfThingsMap extends LightningElement {
             loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
             loadStyle(this, LEAFLETCUSTOM),
 	    loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
-            loadScript(this, CATILINE),
-            loadScript(this, SHPFILE),
-	    loadScript(this, SHP),
-            loadScript(this, LEAFLETADDON)
+            loadScript(this, CATILINE_JS_URL),
+            loadScript(this, SHPFILE_JS_URL),
+	    loadScript(this, SHP_JS_URL),
+            loadScript(this, LEAFLETADDON_JS_URL)
         ]).then(() => {
             this.drawMap();
         });
@@ -83,7 +85,7 @@ export default class MapOfThingsMap extends LightningElement {
         this.dispatchEvent(new CustomEvent(
             CUSTOM_EVENT_INIT, {detail: this.map}
         ));
-        this.shpfile = new L.Shapefile(SCHOOLDISTRICTS, {
+        this.shpfile = new L.Shapefile(SCHOOLDISTRICTS_URL, {
 			onEachFeature: function(feature, layer) {
 				if (feature.properties) {
 					layer.bindPopup(Object.keys(feature.properties).map(function(k) {
