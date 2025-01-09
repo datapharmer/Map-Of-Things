@@ -94,7 +94,7 @@ export default class MapOfThingsMap extends LightningElement {
 				}
 			}
 		});
-	shpfile.addTo(m);
+	shpfile.addTo(this.map);
 		shpfile.once("data:loaded", function() {
 			console.log("finished loaded shapefile");
 		});
