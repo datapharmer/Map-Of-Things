@@ -80,10 +80,7 @@ export default class MapOfThingsMap extends LightningElement {
             attribution: this.tileServerAttribution,
             unloadInvisibleTiles: true
         }).addTo(this.map);
-        this.dispatchEvent(new CustomEvent(
-            CUSTOM_EVENT_INIT, {detail: this.map}
-        ));
-        var shpfile = new L.Shapefile(SCHOOLDISTRICTS_URL, {
+		        var shpfile = new L.Shapefile(SCHOOLDISTRICTS_URL, {
 			onEachFeature: function(feature, layer) {
 				if (feature.properties) {
 					layer.bindPopup(Object.keys(feature.properties).map(function(k) {
@@ -94,10 +91,13 @@ export default class MapOfThingsMap extends LightningElement {
 				}
 			}
 		});
-	shpfile.addTo(this.map);
-		shpfile.once("data:loaded", function() {
-			console.log("finished loaded shapefile");
-		});
+		shpfile.addTo(this.map);
+			shpfile.once("data:loaded", function() {
+				console.log("finished loaded shapefile");
+			});
+			this.dispatchEvent(new CustomEvent(
+				CUSTOM_EVENT_INIT, {detail: this.map}
+			));
     }
     fitBounds(){
         if (this.markersExist) this.map.flyToBounds(this.bounds, {padding: FIT_BOUNDS_PADDING});
