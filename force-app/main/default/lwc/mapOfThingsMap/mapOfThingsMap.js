@@ -62,9 +62,9 @@ export default class MapOfThingsMap extends LightningElement {
             loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
             loadStyle(this, LEAFLETCUSTOM),
 	    loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
-            //loadScript(this, CATILINE),
-            //loadScript(this, SHPFILE),
-	    //loadScript(this, SHP),
+            loadScript(this, CATILINE),
+            loadScript(this, SHPFILE),
+	    loadScript(this, SHP),
             loadScript(this, LEAFLETADDON)
         ]).then(() => {
             this.drawMap();
