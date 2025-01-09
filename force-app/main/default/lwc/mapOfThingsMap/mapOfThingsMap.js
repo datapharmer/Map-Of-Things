@@ -6,7 +6,7 @@ import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
 //import CATILINE from'@salesforce/resourceUrl/catiline';
 //import SHPFILE from'@salesforce/resourceUrl/leafletshpfile';
 //import SHP from '@salesforce/resourceUrl/shp';
-//import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts';
+import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts';
 
 
 const LEAFLET_CSS_URL = '/leaflet.css';
