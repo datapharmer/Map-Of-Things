@@ -2,5 +2,5 @@
 <StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
     <cacheControl>Public</cacheControl>
     <contentType>application/zip</contentType>
-    <description>Leaflet v1.8.0</description>
+    <description>Leaflet v1.9.4 and dependencies</description>
 </StaticResource>
