@@ -84,6 +84,10 @@ export default class MapOfThingsMap extends LightningElement {
         }).addTo(this.map);
 	    				console.log("start loading shapefile with school districts: " + this.schooldistrictsUrl);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
+	    	var watercolor = L.tileLayer('https://{s}.tile.stamen.com/watercolor/{z}/{x}/{y}.jpg', {
+			attribution: 'Map tiles by <a href="https://stamen.com">Stamen Design</a>, <a href="https://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'
+		}).addTo(m);
+	    	console.log("watercolor set to: " + watercolor);
 		        var shpfile = new L.Shapefile(this.schooldistrictsUrl, {
 			onEachFeature: function(feature, layer) {
 				if (feature.properties) {
