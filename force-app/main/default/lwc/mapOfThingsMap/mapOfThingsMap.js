@@ -83,6 +83,8 @@ export default class MapOfThingsMap extends LightningElement {
         }).addTo(this.map);
 	    				console.log("start loading shapefile with school districts ");
 	    				console.log(SCHOOLDISTRICTS_URL);
+	    //todo: check complete url and add additional logging of this section
+	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 		        var shpfile = new L.Shapefile(SCHOOLDISTRICTS_URL, {
 			onEachFeature: function(feature, layer) {
 				if (feature.properties) {
