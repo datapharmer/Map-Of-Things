@@ -71,6 +71,7 @@ export default class MapOfThingsMap extends LightningElement {
         });
     }
     drawMap(){
+	    				console.log("start drawing map");
         const container = this.template.querySelector(MAP_CONTAINER);
         this.map = L.map(container, { 
             zoomControl: true, tap:false   
@@ -80,6 +81,8 @@ export default class MapOfThingsMap extends LightningElement {
             attribution: this.tileServerAttribution,
             unloadInvisibleTiles: true
         }).addTo(this.map);
+	    				console.log("start loading shapefile with school districts ");
+	    				console.log(SCHOOLDISTRICT_URL);
 		        var shpfile = new L.Shapefile(SCHOOLDISTRICTS_URL, {
 			onEachFeature: function(feature, layer) {
 				if (feature.properties) {
