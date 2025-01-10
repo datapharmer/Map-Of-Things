@@ -82,7 +82,7 @@ export default class MapOfThingsMap extends LightningElement {
             unloadInvisibleTiles: true
         }).addTo(this.map);
 	    				console.log("start loading shapefile with school districts ");
-	    				console.log(SCHOOLDISTRICT_URL);
+	    				console.log(SCHOOLDISTRICTS_URL);
 		        var shpfile = new L.Shapefile(SCHOOLDISTRICTS_URL, {
 			onEachFeature: function(feature, layer) {
 				if (feature.properties) {
