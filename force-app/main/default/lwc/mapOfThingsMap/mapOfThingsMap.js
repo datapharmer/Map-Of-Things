@@ -106,7 +106,6 @@ export default class MapOfThingsMap extends LightningElement {
 			});
 			this.dispatchEvent(new CustomEvent(
 				CUSTOM_EVENT_INIT, {detail: this.map}
-				console.log("dispatch event custom event init completed");
 			));
     }
     fitBounds(){
