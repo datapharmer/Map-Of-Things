@@ -22,7 +22,7 @@ const MAP_CONTAINER = 'div.map-container';
 const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
-    schooldistrictsUrl = schooldistricts;
+    var schooldistrictsUrl = $A.get('$Resource.schooldistricts');
     map;    
     _markers = [];
 
