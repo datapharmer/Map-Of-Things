@@ -22,7 +22,10 @@ const MAP_CONTAINER = 'div.map-container';
 const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
+console.log("set schooldistricts url");
     schooldistrictsUrl = SCHOOLDISTRICTS;
+	console.log("schooldistrictsUrl: " +schooldistrictsUrl);
+	
     map;    
     _markers = [];
 
