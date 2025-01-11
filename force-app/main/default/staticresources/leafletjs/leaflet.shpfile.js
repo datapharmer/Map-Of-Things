@@ -1,6 +1,6 @@
 'use strict';
 
-import SHP from'@salesforce/resourceUrl/shpjs';
+import SHP from'@salesforce/resourceUrl/shp';
 shp_js = SHP
 
 /* global cw, shp */
