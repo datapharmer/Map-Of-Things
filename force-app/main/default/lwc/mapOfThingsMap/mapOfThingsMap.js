@@ -13,7 +13,7 @@ const LEAFLET_CSS_URL = '/leaflet.css';
 const LEAFLET_JS_URL = '/leaflet.js';
 const LEAFLETADDON_JS_URL = '/leafletjs_marker_rotate_addon.js';
 const CATILINE_JS_URL = '/catiline.js';
-const SHPFILE_JS_URL = '/leaflet.shpfile.js';
+const SHPFILE = '/leaflet.shpfile.js';
 const SHP_JS_URL = '/shp.js';
 //const SCHOOLDISTRICTS_URL = '/schooldistricts.zip';
 const MIN_ZOOM = 2;
@@ -23,7 +23,6 @@ const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
     schooldistrictsUrl = SCHOOLDISTRICTS;
-    shpfile = SHPFILE_JS_URL;
 	
     map;    
     _markers = [];
@@ -86,9 +85,9 @@ export default class MapOfThingsMap extends LightningElement {
 	    				console.log("start loading shapefile with school districts: " + this.schooldistrictsUrl);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 
-		this.shpfile.addTo(this.map);
+		shpfile.addTo(this.map);
 	    		console.log("shapefile data added to map");
-			this.shpfile.once("data:loaded", function() {
+			shpfile.once("data:loaded", function() {
 				console.log("finished loaded shapefile");
 			});
 			this.dispatchEvent(new CustomEvent(
