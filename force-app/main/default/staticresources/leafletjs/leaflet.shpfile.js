@@ -3,7 +3,6 @@
 import SHP from'@salesforce/resourceUrl/shp';
 //shp_js = SHP
 //console.log("loading shp: " + shp_js);
-console.log("testing shpfilejs output");
 /* global cw, shp */
 L.Shapefile = L.GeoJSON.extend({
   options: {
