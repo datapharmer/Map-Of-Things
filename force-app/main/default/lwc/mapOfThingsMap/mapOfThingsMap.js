@@ -23,6 +23,7 @@ const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
     schooldistrictsUrl = SCHOOLDISTRICTS;
+    shpfile = SHPFILE_JS_URL;
 	
     map;    
     _markers = [];
