@@ -14,7 +14,7 @@ const LEAFLET_JS_URL = '/leaflet.js';
 const LEAFLETADDON_JS_URL = '/leafletjs_marker_rotate_addon.js';
 const CATILINE_JS_URL = '/catiline.js';
 const SHPFILE_JS_URL = '/leaflet.shpfile.js';
-const SHP_JS_URL = '/shp.js';
+//const SHP_JS_URL = '/shp.js';
 //const SCHOOLDISTRICTS_URL = '/schooldistricts.zip';
 const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
@@ -66,7 +66,7 @@ export default class MapOfThingsMap extends LightningElement {
 	    loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
             loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
             loadScript(this, LEAFLET_JS + SHPFILE_JS_URL),
-	    loadScript(this, LEAFLET_JS + SHP_JS_URL)
+	    //loadScript(this, LEAFLET_JS + SHP_JS_URL)
         ]).then(() => {
             this.drawMap();
         });
@@ -85,22 +85,6 @@ export default class MapOfThingsMap extends LightningElement {
 	    				console.log("start loading shapefile with school districts: " + this.schooldistrictsUrl);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 
-    var watermarkurl = 'http://{s}.tile.stamen.com/toner/{z}/{x}/{y}.png'
-
-    var optionsObject ={
-        attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'
-    }
-
-    var mq = L.tileLayer(watermarkurl, optionsObject);
-    var watercolor = L.tileLayer('http://{s}.tile.stamen.com/watercolor/{z}/{x}/{y}.jpg', {
-        attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'
-    })
-    mq.addTo(this.map);
-    var lc = L.control.layers({
-        "Stamen Watercolor": watercolor,
-        "Stamen Toner": mq
-    }).addTo(this.map);
-	    	console.log("watercolor set to: " + watercolor);
 		        var shpfile = new L.Shapefile(this.schooldistrictsUrl, {
 			onEachFeature: function(feature, layer) {
 				if (feature.properties) {
