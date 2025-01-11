@@ -69,11 +69,11 @@ export default class MapOfThingsMap extends LightningElement {
 	    //loadScript(this, LEAFLET_JS + SHP_JS_URL)
         ]).then(() => {
             this.drawMap();
-        });
+        })
 	.catch(err => {
    	    console.log('Error loading promise');
    	    console.log(err);
-  	}),
+  	});
     }
     drawMap(){
 	    				console.log("start drawing map");
