@@ -5,7 +5,7 @@ import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
 //import LEAFLETCUSTOM from '@salesforce/resourceUrl/leaflet_custom_css';
 //import CATILINE from'@salesforce/resourceUrl/catiline';
 //import SHPFILE from'@salesforce/resourceUrl/leafletshpfile';
-//import SHP from '@salesforce/resourceUrl/shp';
+import SHP from '@salesforce/resourceUrl/shp';
 import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts';
 
 
