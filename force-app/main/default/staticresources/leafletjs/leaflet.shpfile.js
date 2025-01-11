@@ -2,9 +2,9 @@
 
 /* global cw, shp */
 L.Shapefile = L.GeoJSON.extend({
-//  options: {
-//    importUrl: shpjs
-//  },
+  options: {
+    importUrl: shpjs
+  },
 
   initialize: function(file, options) {
     L.Util.setOptions(this, options);
