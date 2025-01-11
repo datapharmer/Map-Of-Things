@@ -1,9 +1,12 @@
 'use strict';
 
+import SHP from'@salesforce/resourceUrl/shpjs';
+shp_js = SHP
+
 /* global cw, shp */
 L.Shapefile = L.GeoJSON.extend({
   options: {
-    importUrl: 'shp.js'
+    importUrl: shp_js
   },
 
   initialize: function(file, options) {
