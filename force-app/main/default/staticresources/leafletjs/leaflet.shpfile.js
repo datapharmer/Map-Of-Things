@@ -1,3 +1,12 @@
+import { LightningElement, api } from 'lwc';
+import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
+import SHP from '@salesforce/resourceUrl/shp';
+
+const SHP_JS_URL = '/shp.js';
+
+export default class MapOfThingsMap extends LightningElement {
+  shpjs = SHP;
+
 'use strict';
 
 //import SHP from'@salesforce/resourceUrl/shp';
@@ -6,7 +15,7 @@
 /* global cw, shp */
 L.Shapefile = L.GeoJSON.extend({
   options: {
-    importUrl: 'shp.js'
+    importUrl: shpjs
   },
 
   initialize: function(file, options) {
@@ -64,3 +73,4 @@ L.Shapefile = L.GeoJSON.extend({
 L.shapefile = function(a, b, c) {
   return new L.Shapefile(a, b, c);
 };
+}
