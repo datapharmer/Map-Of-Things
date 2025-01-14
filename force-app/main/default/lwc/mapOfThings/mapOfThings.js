@@ -1,118 +1,80 @@
 import { LightningElement, api } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-import { subscribe } from 'lightning/empApi';
-import getRecords from '@salesforce/apex/MapOfThingsUtils.getRecords';
-import LightningAlert from 'lightning/alert';
+import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
+import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
+import DRAWMAP_JS from '@salesforce/resourceUrl/drawmap';
+//import LEAFLETADDON from '@salesforce/resourceUrl/leafletjs_marker_rotate_addon';
+//import LEAFLETCUSTOM from '@salesforce/resourceUrl/leaflet_custom_css';
+//import CATILINE from'@salesforce/resourceUrl/catiline';
+//import SHPFILE from'@salesforce/resourceUrl/leafletshpfile';
+//import SHP from '@salesforce/resourceUrl/shp';
+import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts';
 
-const ERROR_TITLE = 'Map Of Things - ERROR';
-const ERROR_MESSAGE_INIT_GET_RECORDS = 'On getting records';
-const ERROR_MESSAGE_INIT_GET_RECORDS_ON_CDC = 'On getting records after detecting changed';
-const ERROR_MESSAGE_INIT_CDC = 'On init subscribe Change Data Capture';
+const LEAFLET_CSS_URL = '/leaflet.css';
+const LEAFLET_JS_URL = '/leaflet.js';
+const LEAFLETADDON_JS_URL = '/leafletjs_marker_rotate_addon.js';
+const CATILINE_JS_URL = '/catiline.js';
+const SHPFILE_JS_URL = '/shpfile.js';
+const SHP_JS_URL = '/shp.js';
+const DRAWMAP_JS_URL = '/drawmap.js';
+const SCHOOLDISTRICTS_URL = '/schooldistricts.zip';
+const MIN_ZOOM = 2;
+const FIT_BOUNDS_PADDING = [20, 20];
+const MAP_CONTAINER = 'div.inner-map-container';
+const CUSTOM_EVENT_INIT = 'init';
 
-export default class MapOfThings extends LightningElement {
+export default class MapOfThingsMap extends LightningElement {
+    schooldistrictsUrl = SCHOOLDISTRICTS;
+	
+    map;    
+    _markers = [];
 
-    map;
-    records = [];
-    propertiesChecked = false;
-    mapIsReady = false;
-    recordsAreReady = false;
-    
     @api tileServerUrl;
     @api tileServerAttribution;
     @api mapSizeY;
-    @api mapDefaultPositionLat;
-    @api mapDefaultPositionLng;
+    @api mapDefaultPosition;
     @api mapDefaultZoomLevel;
-    @api targetObj;
-    @api targetLat;
-    @api targetLng;
-    @api targetExplain;
-    @api targetImg;
-    @api targetGroup;
-    @api whereClause;
-    @api iconSizeX;
-    @api iconSizeY;
-    @api markerRotate;
-    @api moveDuration;
     @api autoFitBounds;
-    @api markerZoomWithMap;
-    
-    get cdcChannelName(){
-        if (this.targetObj){
-            const str = this.targetObj.replace('__c', '__');
-            return `/data/${str}ChangeEvent`;
-        }
-        return '';
-    }   
+    @api
     get markers(){
-        if (this.recordsAreReady){
-            return this.records.map(record => {
-                return {
-                    id: record.Id,
-                    lat: parseFloat(record[this.targetLat]),
-                    lng: parseFloat(record[this.targetLng]),
-                    popup: record[this.targetExplain],
-                    icon: this.useCustomMarker ? record[this.targetImg]: null,
-                    group: this.useGrouping ? record[this.targetGroup]: null
-                }
+        return this._markers;
+    }
+    set markers(newMarkers){
+        if (newMarkers && newMarkers.length >= 0){
+            this._markers = [...newMarkers];
+            if (this.autoFitBounds) this.fitBounds();
+        }
+    }    
+
+    get markersExist(){
+        return this.markers && this.markers.length > 0;
+    }
+    get bounds(){
+        if (this.markersExist){
+            return this.markers.map(marker => {
+                return [marker.lat, marker.lng];
             });
         }
         return [];
     }
-    get useCustomMarker(){
-        return this.targetImg && this.targetImg.length > 1;
-    }
-    get useGrouping(){
-        return this.targetGroup && this.targetGroup.length > 1;
-    }
-    get normalizedMarkerRotate(){
-        return this.markerRotate && this.useCustomMarker;
-    }
-    get mapDefaultPosition(){
-        return [parseFloat(this.mapDefaultPositionLat), parseFloat(this.mapDefaultPositionLng)];
-    }
 
-    initedMap(event){
-        this.map = event.detail;
-        //line below may be needed to keep sf lightning locker happy 
-        //event.preventDefault();
-        this.mapIsReady = true;
-        this.initGetRecords();
+    renderedCallback() {
+        this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
-    initGetRecords(){
-        this.getRecords(records => {
-            this.records = records && records.length > 0 ? records: [];
-            this.recordsAreReady = true;
-            this.subscribeCdc();
-        }, error => {
-            this.alert(`${ERROR_MESSAGE_INIT_GET_RECORDS} - ${error.body.message}`);
-        });
-    }
-    subscribeCdc(){
-        const messageCallback = () => {
-            this.getRecords(
-                records => this.records = records && records.length > 0 ? records: [], 
-                error => this.alert(`${ERROR_MESSAGE_INIT_GET_RECORDS_ON_CDC} - ${error.body.message}`)
-            );
-        };
-        subscribe(this.cdcChannelName, -1, messageCallback).catch(error => {
-            this.alert(`${ERROR_MESSAGE_INIT_CDC} - ${error.body.message}`);
-        });
-    }
-    getRecords(onGetRecords, onError){
-        getRecords({
-            objectName: this.targetObj,
-            LatName: this.targetLat,
-            LngName: this.targetLng,
-            ExplainName: this.targetExplain,
-            ImgName: this.targetImg,
-            GroupName: this.targetGroup,
-            whereClause: this.whereClause
-        }).then(onGetRecords).catch(onError);
-    }
-    alert(message){
-        const theme = 'error';
-        const label = ERROR_TITLE;
-        LightningAlert.open({label, message, theme});
+    connectedCallback(){
+        Promise.allSettled([
+            loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
+	    loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
+	    loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
+            loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
+            loadScript(this, LEAFLET_JS + SHPFILE_JS_URL),
+	    loadScript(this, LEAFLET_JS + SHP_JS_URL)
+        ]).then(() => {
+	   console.log("process promise");
+            this.drawMap();
+        })
+	.catch(err => {
+   	    console.log('Error loading promise');
+   	    console.log(err);
+  	});
     }
 }
