@@ -77,4 +77,7 @@ export default class MapOfThingsMap extends LightningElement {
    	    console.log(err);
   	});
     }
+    fitBounds(){
+        if (this.markersExist) this.map.flyToBounds(this.bounds, {padding: FIT_BOUNDS_PADDING});
+}
 }
