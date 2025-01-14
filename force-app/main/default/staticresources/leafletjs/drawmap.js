@@ -33,6 +33,3 @@
 				CUSTOM_EVENT_INIT, {detail: this.map}
 			));
     }
-    fitBounds(){
-        if (this.markersExist) this.map.flyToBounds(this.bounds, {padding: FIT_BOUNDS_PADDING});
-    }
