@@ -61,4 +61,3 @@ L.Shapefile = L.GeoJSON.extend({
 L.shapefile = function(a, b, c) {
   return new L.Shapefile(a, b, c);
 };
-}
