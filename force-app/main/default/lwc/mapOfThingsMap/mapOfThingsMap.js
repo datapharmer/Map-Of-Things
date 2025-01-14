@@ -1,7 +1,6 @@
 import { LightningElement, api } from 'lwc';
 import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
-import DRAWMAP_JS from '@salesforce/resourceUrl/drawmap';
 //import LEAFLETADDON from '@salesforce/resourceUrl/leafletjs_marker_rotate_addon';
 //import LEAFLETCUSTOM from '@salesforce/resourceUrl/leaflet_custom_css';
 //import CATILINE from'@salesforce/resourceUrl/catiline';
@@ -67,7 +66,8 @@ export default class MapOfThingsMap extends LightningElement {
 	    loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
             loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
             loadScript(this, LEAFLET_JS + SHPFILE_JS_URL),
-	    loadScript(this, LEAFLET_JS + SHP_JS_URL)
+	    loadScript(this, LEAFLET_JS + SHP_JS_URL),
+	    loadscript(this, LEAFLET_JS + DRAWMAP_JS_URL)
         ]).then(() => {
 	   console.log("process promise");
             this.drawMap();
