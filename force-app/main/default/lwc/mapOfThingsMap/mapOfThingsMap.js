@@ -6,6 +6,7 @@ import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
 //import CATILINE from'@salesforce/resourceUrl/catiline';
 //import SHPFILE from'@salesforce/resourceUrl/leafletshpfile';
 //import SHP from '@salesforce/resourceUrl/shp';
+import DRAWMAP from '@salesforce/resourceUrl/drawmap'
 import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts';
 
 const LEAFLET_CSS_URL = '/leaflet.css';
@@ -14,16 +15,15 @@ const LEAFLETADDON_JS_URL = '/leafletjs_marker_rotate_addon.js';
 const CATILINE_JS_URL = '/catiline.js';
 const SHPFILE_JS_URL = '/shpfile.js';
 const SHP_JS_URL = '/shp.js';
-const DRAWMAP_JS_URL = '/drawmap.js';
+//const DRAWMAP_JS_URL = '/drawmap.js';
 const SCHOOLDISTRICTS_URL = '/schooldistricts.zip';
 const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.inner-map-container';
 const CUSTOM_EVENT_INIT = 'init';
 
-import { drawmap } from '/drawmap.js'
-
 export default class MapOfThingsMap extends LightningElement {
+    drawmap = DRAWMAP;
     schooldistrictsUrl = SCHOOLDISTRICTS;
 	
     map;    
@@ -69,7 +69,7 @@ export default class MapOfThingsMap extends LightningElement {
             loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
             loadScript(this, LEAFLET_JS + SHPFILE_JS_URL),
 	    loadScript(this, LEAFLET_JS + SHP_JS_URL),
-	    loadScript(this, LEAFLET_JS + DRAWMAP_JS_URL)
+	    //loadScript(this, LEAFLET_JS + DRAWMAP_JS_URL)
         ]).then(() => {
 	   console.log("process promise");
             this.drawMap();
