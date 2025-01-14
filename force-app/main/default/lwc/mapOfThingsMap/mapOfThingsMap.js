@@ -1,7 +1,7 @@
 import { LightningElement, api } from 'lwc';
 import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
-import DRAWMAP_JS from '@salesforce/resourceUrl/drawmap;
+import DRAWMAP_JS from '@salesforce/resourceUrl/drawmap';
 //import LEAFLETADDON from '@salesforce/resourceUrl/leafletjs_marker_rotate_addon';
 //import LEAFLETCUSTOM from '@salesforce/resourceUrl/leaflet_custom_css';
 //import CATILINE from'@salesforce/resourceUrl/catiline';
