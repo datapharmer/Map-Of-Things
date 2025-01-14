@@ -74,6 +74,7 @@ export default class MapOfThings extends LightningElement {
 
     initedMap(event){
         this.map = event.detail;
+         event.preventDefault();
         this.mapIsReady = true;
         this.initGetRecords();
     }
