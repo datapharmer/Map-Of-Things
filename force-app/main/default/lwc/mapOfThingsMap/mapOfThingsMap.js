@@ -21,6 +21,8 @@ const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.inner-map-container';
 const CUSTOM_EVENT_INIT = 'init';
 
+import { drawmap } from '/drawmap.js'
+
 export default class MapOfThingsMap extends LightningElement {
     schooldistrictsUrl = SCHOOLDISTRICTS;
 	
