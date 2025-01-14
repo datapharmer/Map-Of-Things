@@ -72,9 +72,10 @@ export default class MapOfThingsMap extends LightningElement {
 	   console.log("process promise");
             this.drawMap();
         })
-	.catch(err => {
+	.catch(function(e) {
    	    console.log('Error loading promise');
-   	    console.log(err);
+   	    console.log(e);
+	    console.log(e.message);
   	});
     }
     fitBounds(){
