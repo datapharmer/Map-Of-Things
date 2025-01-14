@@ -74,7 +74,8 @@ export default class MapOfThings extends LightningElement {
 
     initedMap(event){
         this.map = event.detail;
-         event.preventDefault();
+        //line below may be needed to keep sf lightning locker happy 
+        //event.preventDefault();
         this.mapIsReady = true;
         this.initGetRecords();
     }
