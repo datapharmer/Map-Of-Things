@@ -70,7 +70,7 @@ export default class MapOfThingsMap extends LightningElement {
         ]).then(() => {
 	   console.log("process promise");
             this.drawMap();
-        });
+        })
 	.catch(err => {
    	    console.log('Error loading promise');
    	    console.log(err);
