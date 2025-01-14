@@ -1,4 +1,4 @@
-    drawMap(){
+export function drawMap(){
 	    				console.log("start drawing map");
         const container = this.template.querySelector(MAP_CONTAINER);
         this.map = L.map(container, { 
