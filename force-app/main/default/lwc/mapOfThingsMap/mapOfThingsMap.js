@@ -24,7 +24,7 @@ const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
     //drawMap = DRAWMAP_JS_URL;
-    schooldistrictsLocation = SCHOOLDISTRICTS_URL;
+    schooldistrictsUrl = SCHOOLDISTRICTS_URL;
 	
     map;    
     _markers = [];
@@ -118,7 +118,7 @@ export default class MapOfThingsMap extends LightningElement {
 	    				console.log("start loading shapefile with school districts: " + SCHOOLDISTRICTS_URL);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 
-		        var shpfile = new L.Shapefile(SCHOOLDISTRICTS_URL, {
+		        var shpfile = new L.Shapefile(this.convertToBase64(SCHOOLDISTRICTS_URL), {
 			onEachFeature: function(feature, layer) {
 				if (feature.properties) {
 					layer.bindPopup(Object.keys(feature.properties).map(function(k) {
