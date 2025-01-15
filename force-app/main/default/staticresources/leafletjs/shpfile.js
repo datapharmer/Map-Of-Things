@@ -6,7 +6,8 @@ L.Shapefile = L.GeoJSON.extend({
     importUrl: 'shp.js'
   },
 
-  initialize: function(file, options) {
+  initialize: function(options) {
+    file = schooldistrictsUrl;
     L.Util.setOptions(this, options);
     if (typeof cw !== 'undefined') {
       /*eslint-disable no-new-func*/
