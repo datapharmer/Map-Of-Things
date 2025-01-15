@@ -15,7 +15,7 @@ const LEAFLETADDON_JS_URL = '/leafletjs_marker_rotate_addon.js';
 const CATILINE_JS_URL = '/catiline.js';
 const SHPFILE_JS_URL = '/shpfile.js';
 const SHP_JS_URL = '/shp.js';
-const DRAWMAP_JS_URL = '/drawmap.js';
+//const DRAWMAP_JS_URL = '/drawmap.js';
 const SCHOOLDISTRICTS_URL = '/schooldistricts.zip';
 const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
@@ -23,7 +23,7 @@ const MAP_CONTAINER = 'div.inner-map-container';
 const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
-    drawMap = DRAWMAP_JS_URL;
+    //drawMap = DRAWMAP_JS_URL;
     schooldistrictsUrl = SCHOOLDISTRICTS;
 	
     map;    
@@ -72,7 +72,7 @@ export default class MapOfThingsMap extends LightningElement {
 	    loadScript(this, LEAFLET_JS + SHP_JS_URL)
         ]).then(() => {
 	   console.log("process promise");
-            drawMap();
+            this.drawMap();
         })
 	.catch(function(e) {
    	    console.log('Error loading promise');
@@ -80,7 +80,44 @@ export default class MapOfThingsMap extends LightningElement {
 	    console.log(e.message);
   	});
     }
-	
+
+     drawMap(){
+	console.log("start drawing map");
+        const container = this.template.querySelector(MAP_CONTAINER);
+        console.log("container defined");
+	this.map = L.map(container, { 
+            zoomControl: true, tap:false   
+        }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);  
+	console.log("mapping set");
+        L.tileLayer(this.tileServerUrl, {
+            minZoom: MIN_ZOOM,
+            attribution: this.tileServerAttribution,
+            unloadInvisibleTiles: true
+        }).addTo(this.map);
+	    				console.log("start loading shapefile with school districts: " + this.schooldistrictsUrl);
+	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
+
+		        var shpfile = new L.Shapefile(this.schooldistrictsUrl, {
+			onEachFeature: function(feature, layer) {
+				if (feature.properties) {
+					layer.bindPopup(Object.keys(feature.properties).map(function(k) {
+						return k + ": " + feature.properties[k];
+					}).join("<br />"), {
+						maxHeight: 200
+					});
+				}
+			}
+		});
+
+		shpfile.addTo(this.map);
+	    		console.log("shapefile data added to map");
+			shpfile.once("data:loaded", function() {
+				console.log("finished loaded shapefile");
+			});
+			this.dispatchEvent(new CustomEvent(
+				CUSTOM_EVENT_INIT, {detail: this.map}
+			));
+ }
 	
     fitBounds(){
         if (this.markersExist) this.map.flyToBounds(this.bounds, {padding: FIT_BOUNDS_PADDING});
