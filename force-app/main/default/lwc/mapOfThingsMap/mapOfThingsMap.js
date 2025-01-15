@@ -82,6 +82,25 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
      drawMap(){
+	     convertToBase64(file){
+
+    let reader = new FileReader();
+
+            reader.onload = function () {
+
+                var base64String = reader.result.replace("data:", "").replace(/^.+,/, "");
+
+                this.fileBase64String = base64String;
+
+                console.log('fileBase64String '+this.fileBase64String);
+
+                alert('fileBase64String '+this.fileBase64String);
+
+            }
+
+            reader.readAsDataURL(file);
+
+        }
 	console.log("start drawing map");
         const container = this.template.querySelector(MAP_CONTAINER);
         console.log("container defined");
@@ -122,23 +141,4 @@ export default class MapOfThingsMap extends LightningElement {
     fitBounds(){
         if (this.markersExist) this.map.flyToBounds(this.bounds, {padding: FIT_BOUNDS_PADDING});
 }
-    convertToBase64(file){
-
-    let reader = new FileReader();
-
-            reader.onload = function () {
-
-                var base64String = reader.result.replace("data:", "").replace(/^.+,/, "");
-
-                this.fileBase64String = base64String;
-
-                console.log('fileBase64String '+this.fileBase64String);
-
-                alert('fileBase64String '+this.fileBase64String);
-
-            }
-
-            reader.readAsDataURL(file);
-
-        }
 }
