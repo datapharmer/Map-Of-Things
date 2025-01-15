@@ -7,7 +7,7 @@ import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
 //import SHPFILE from'@salesforce/resourceUrl/leafletshpfile';
 //import SHP from '@salesforce/resourceUrl/shp';
 //import DRAWMAP from '@salesforce/resourceUrl/drawmap'
-import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts';
+//import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts';
 
 const LEAFLET_CSS_URL = '/leaflet.css';
 const LEAFLET_JS_URL = '/leaflet.js';
@@ -24,7 +24,7 @@ const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
     //drawMap = DRAWMAP_JS_URL;
-    schooldistrictsUrl = SCHOOLDISTRICTS;
+    schooldistrictsUrl = SCHOOLDISTRICTS_URL;
 	
     map;    
     _markers = [];
@@ -97,7 +97,7 @@ export default class MapOfThingsMap extends LightningElement {
 	    				console.log("start loading shapefile with school districts: " + this.schooldistrictsUrl);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 
-		        var shpfile = new L.Shapefile({
+		        var shpfile = new L.Shapefile(schooldistrictsUrl, {
 			onEachFeature: function(feature, layer) {
 				if (feature.properties) {
 					layer.bindPopup(Object.keys(feature.properties).map(function(k) {
