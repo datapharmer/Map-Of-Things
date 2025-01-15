@@ -97,7 +97,7 @@ export default class MapOfThingsMap extends LightningElement {
 	    				console.log("start loading shapefile with school districts: " + this.schooldistrictsUrl);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 
-		        var shpfile = new L.Shapefile(this.schooldistrictsUrl, {
+		        var shpfile = new L.Shapefile(convertToBase64(this.schooldistrictsUrl), {
 			onEachFeature: function(feature, layer) {
 				if (feature.properties) {
 					layer.bindPopup(Object.keys(feature.properties).map(function(k) {
@@ -122,4 +122,23 @@ export default class MapOfThingsMap extends LightningElement {
     fitBounds(){
         if (this.markersExist) this.map.flyToBounds(this.bounds, {padding: FIT_BOUNDS_PADDING});
 }
+    convertToBase64(file){
+
+    let reader = new FileReader();
+
+            reader.onload = function () {
+
+                var base64String = reader.result.replace("data:", "").replace(/^.+,/, "");
+
+                this.fileBase64String = base64String;
+
+                console.log('fileBase64String '+this.fileBase64String);
+
+                alert('fileBase64String '+this.fileBase64String);
+
+            }
+
+            reader.readAsDataURL(file);
+
+        }
 }
