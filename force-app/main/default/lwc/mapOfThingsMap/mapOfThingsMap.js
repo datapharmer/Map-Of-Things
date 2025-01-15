@@ -25,7 +25,7 @@ const CUSTOM_EVENT_INIT = 'init';
 export default class MapOfThingsMap extends LightningElement {
     //drawMap = DRAWMAP_JS_URL;
     schooldistrictsLocation = SCHOOLDISTRICTS_URL;
-    String schooldistrictsUrl = schooldistrictsLocation.getContent().toString();   //get the content as string
+    schooldistrictsUrl = schooldistrictsLocation.getContent().toString();   //get the content as string
 	
     map;    
     _markers = [];
