@@ -76,7 +76,7 @@ export default class MapOfThingsMap extends LightningElement {
 
             reader.readAsDataURL(file);
 
-        };
+        }
 
     renderedCallback() {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
