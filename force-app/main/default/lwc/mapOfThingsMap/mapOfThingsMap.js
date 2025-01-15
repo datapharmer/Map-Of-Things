@@ -59,7 +59,7 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
     convertToBase64(file){
-
+	console.log("filetype: " + file.type);
     	let reader = new FileReader();
 
             reader.onload = function () {
