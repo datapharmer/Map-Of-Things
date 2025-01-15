@@ -23,7 +23,7 @@ const MAP_CONTAINER = 'div.inner-map-container';
 const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
-    drawmap = DRAWMAP;
+    drawmap = DRAWMAP_JS_URL;
     schooldistrictsUrl = SCHOOLDISTRICTS;
 	
     map;    
