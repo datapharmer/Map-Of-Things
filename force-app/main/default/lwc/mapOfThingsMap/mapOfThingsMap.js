@@ -100,7 +100,7 @@ export default class MapOfThingsMap extends LightningElement {
 
             reader.readAsDataURL(file);
 
-        }
+        };
 	console.log("start drawing map");
         const container = this.template.querySelector(MAP_CONTAINER);
         console.log("container defined");
