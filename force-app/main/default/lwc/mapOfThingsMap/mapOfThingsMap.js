@@ -23,7 +23,7 @@ const MAP_CONTAINER = 'div.inner-map-container';
 const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
-    drawmap = DRAWMAP_JS_URL;
+    drawMap = DRAWMAP_JS_URL;
     schooldistrictsUrl = SCHOOLDISTRICTS;
 	
     map;    
@@ -72,7 +72,7 @@ export default class MapOfThingsMap extends LightningElement {
 	    loadScript(this, LEAFLET_JS + SHP_JS_URL)
         ]).then(() => {
 	   console.log("process promise");
-            drawMap();
+            this.drawMap();
         })
 	.catch(function(e) {
    	    console.log('Error loading promise');
