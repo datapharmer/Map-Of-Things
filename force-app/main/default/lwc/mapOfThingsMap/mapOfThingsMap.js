@@ -64,13 +64,15 @@ export default class MapOfThingsMap extends LightningElement {
 
             reader.onload = function () {
 
-                var base64String = reader.result.replace("data:", "").replace(/^.+,/, "");
+                //var base64String = reader.result.replace("data:", "").replace(/^.+,/, "");
+		this.setState({file: reader.result})
 
-                this.fileBase64String = base64String;
+		    
+                //this.fileBase64String = base64String;
 
-                console.log('fileBase64String '+this.fileBase64String);
+                //console.log('fileBase64String '+this.fileBase64String);
 
-                alert('fileBase64String '+this.fileBase64String);
+                //alert('fileBase64String '+this.fileBase64String);
 
             }
 
