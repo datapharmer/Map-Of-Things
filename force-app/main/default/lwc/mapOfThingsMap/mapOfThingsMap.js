@@ -124,7 +124,7 @@ export default class MapOfThingsMap extends LightningElement {
 				CUSTOM_EVENT_INIT, {detail: this.map}
 			));
  }
-   async function fetchData() {
+   async fetchData() {
 	   const response = await fetch(SCHOOLDISTRICTS);
 	   const data = await response.json();
 	   return data;
