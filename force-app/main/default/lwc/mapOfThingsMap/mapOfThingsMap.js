@@ -60,9 +60,9 @@ export default class MapOfThingsMap extends LightningElement {
     renderedCallback() {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
-    async connectedCallback(){
-	//const shapedata = await fetchData();
-	const shapedata = SCHOOLDISTRICTS;
+    connectedCallback(){
+	const shapedata = fetchData();
+	//const shapedata = SCHOOLDISTRICTS;
 	console.log("shapefile data: " + shapedata);
 	console.log("procesing promise");
         Promise.all([
@@ -125,9 +125,9 @@ export default class MapOfThingsMap extends LightningElement {
 				CUSTOM_EVENT_INIT, {detail: this.map}
 			));
  }
-   async fetchData() {
-	   const response = await fetch(SCHOOLDISTRICTS);
-	   const data = await response.json();
+   fetchData() {
+	   const response = fetch(SCHOOLDISTRICTS);
+	   const data = response.json();
 	   return data;
     }
 	
