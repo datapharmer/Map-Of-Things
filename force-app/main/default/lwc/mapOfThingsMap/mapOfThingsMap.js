@@ -114,11 +114,11 @@ export default class MapOfThingsMap extends LightningElement {
             unloadInvisibleTiles: true
         }).addTo(this.map);
 	    				console.log("shapefile with school districts details: " + SCHOOLDISTRICTS);
-	     				console.log("file length: " + this.shapedata.length);
-	     				console.log("file type: " + this.shapedata.type);
+	     				console.log("file length: " + shapedata.length);
+	     				console.log("file type: " + shapedata.type);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 
-		        var shpfile = new L.Shapefile(this.shapedata, {
+		        var shpfile = new L.Shapefile(shapedata, {
 			onEachFeature: function(feature, layer) {
 				if (feature.properties) {
 					layer.bindPopup(Object.keys(feature.properties).map(function(k) {
