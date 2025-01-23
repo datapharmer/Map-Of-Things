@@ -24,7 +24,6 @@ const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
     //drawMap = DRAWMAP_JS_URL;
-    schooldistrictsUrl = SCHOOLDISTRICTS_URL;
 	
     map;    
     _markers = [];
@@ -105,7 +104,7 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
      drawMap(){
-	     
+	schooldistrictsUrl = SCHOOLDISTRICTS_URL;     
 	console.log("start drawing map");
         const container = this.template.querySelector(MAP_CONTAINER);
         console.log("container defined");
