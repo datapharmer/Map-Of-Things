@@ -21,6 +21,9 @@ const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.inner-map-container';
 const CUSTOM_EVENT_INIT = 'init';
+const shapedata = fetch(SCHOOLDISTRICTS).then((response) => response.blob());
+//const shapedata = SCHOOLDISTRICTS;
+console.log("shapefile data: " + shapedata);
 
 export default class MapOfThingsMap extends LightningElement {
     //drawMap = DRAWMAP_JS_URL;
@@ -62,9 +65,6 @@ export default class MapOfThingsMap extends LightningElement {
     }
     connectedCallback(){
 	console.log("Fetch result");
-	const shapedata = fetch(SCHOOLDISTRICTS).then((response) => response.blob());
-	//const shapedata = SCHOOLDISTRICTS;
-	console.log("shapefile data: " + shapedata);
 	console.log("procesing promise");
         Promise.all([
             loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
