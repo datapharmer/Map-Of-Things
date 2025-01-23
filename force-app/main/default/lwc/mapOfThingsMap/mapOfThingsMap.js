@@ -60,7 +60,7 @@ export default class MapOfThingsMap extends LightningElement {
     renderedCallback() {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
-    connectedCallback(){
+    async connectedCallback(){
 	const shapedata = await fetchData();
 	console.log(:shapefile data: " + data);
 	console.log("procesing promise");
