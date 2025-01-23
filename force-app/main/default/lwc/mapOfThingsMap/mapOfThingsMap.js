@@ -7,7 +7,7 @@ import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
 //import SHPFILE from'@salesforce/resourceUrl/leafletshpfile';
 //import SHP from '@salesforce/resourceUrl/shp';
 //import DRAWMAP from '@salesforce/resourceUrl/drawmap'
-//import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts';
+import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts';
 
 const LEAFLET_CSS_URL = '/leaflet.css';
 const LEAFLET_JS_URL = '/leaflet.js';
@@ -16,7 +16,7 @@ const CATILINE_JS_URL = '/catiline.js';
 const SHPFILE_JS_URL = '/shpfile.js';
 const SHP_JS_URL = '/shp.js';
 //const DRAWMAP_JS_URL = '/drawmap.js';
-const SCHOOLDISTRICTS_URL = '/schooldistricts.zip';
+//const SCHOOLDISTRICTS_URL = '/schooldistricts.zip';
 const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.inner-map-container';
@@ -116,10 +116,10 @@ export default class MapOfThingsMap extends LightningElement {
             attribution: this.tileServerAttribution,
             unloadInvisibleTiles: true
         }).addTo(this.map);
-	    				console.log("start loading shapefile with school districts: " + SCHOOLDISTRICTS_URL);
+	    				console.log("start loading shapefile with school districts: " + SCHOOLDISTRICTS);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 
-		        var shpfile = new L.Shapefile(this.convertToBase64(SCHOOLDISTRICTS_URL), {
+		        var shpfile = new L.Shapefile(this.convertToBase64(SCHOOLDISTRICTS), {
 			onEachFeature: function(feature, layer) {
 				if (feature.properties) {
 					layer.bindPopup(Object.keys(feature.properties).map(function(k) {
