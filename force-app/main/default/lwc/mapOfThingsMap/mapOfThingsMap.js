@@ -57,29 +57,6 @@ export default class MapOfThingsMap extends LightningElement {
         return [];
     }
 
-    convertToBase64(file){
-	console.log("filetype: " + file.type);
-    	let reader = new FileReader();
-
-            reader.onload = function () {
-
-                //var base64String = reader.result.replace("data:", "").replace(/^.+,/, "");
-		this.setState({file: reader.result})
-
-		    
-                //this.fileBase64String = base64String;
-
-                //console.log('fileBase64String '+this.fileBase64String);
-
-                //alert('fileBase64String '+this.fileBase64String);
-
-            }
-
-            reader.readAsDataURL(file);
-	    console.log("filetype attempt 2: " + file.type);
-
-        }
-
     renderedCallback() {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
@@ -121,7 +98,7 @@ export default class MapOfThingsMap extends LightningElement {
 	    				console.log("start loading shapefile with school districts: " + SCHOOLDISTRICTS);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 
-		        var shpfile = new L.Shapefile(this.SCHOOLDISTRICTS, {
+		        var shpfile = new L.Shapefile(SCHOOLDISTRICTS, {
 			onEachFeature: function(feature, layer) {
 				if (feature.properties) {
 					layer.bindPopup(Object.keys(feature.properties).map(function(k) {
