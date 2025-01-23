@@ -61,7 +61,6 @@ export default class MapOfThingsMap extends LightningElement {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
     connectedCallback(){
-	console.log("Fetch result");
 	console.log("procesing promise");
         Promise.all([
             loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
@@ -85,14 +84,17 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
      drawMap(){
+	console.log("Fetch shapedata");
 	const shapedata = fetch(SCHOOLDISTRICTS)
 				.then(response => {
     					if (!response.ok) {
       						throw new Error('Network response for SCHOOLDISTRICTS fetch was not ok');
     					}
+					console.log("returning blob inside fetch");
     					return response.blob(); // Returns a promise that resolves with a Blob
   				})
   				.then(function (myBlob) {
+					console.log("processing blob result to return");
                 			return {
                     				blob: myBlob
                 			};
