@@ -84,7 +84,7 @@ export default class MapOfThingsMap extends LightningElement {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
     connectedCallback(){
-        Promise.allSettled([
+        Promise.all([
             loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
 	    loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
 	    loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
