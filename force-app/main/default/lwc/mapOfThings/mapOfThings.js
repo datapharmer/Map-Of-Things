@@ -14,7 +14,7 @@ export default class MapOfThings extends LightningElement {
     map;
     records = [];
     propertiesChecked = false;
-    this.mapIsReady = false;
+    //mapIsReady = false;
     recordsAreReady = false;
     
     @api tileServerUrl;
@@ -70,6 +70,10 @@ export default class MapOfThings extends LightningElement {
     }
     get mapDefaultPosition(){
         return [parseFloat(this.mapDefaultPositionLat), parseFloat(this.mapDefaultPositionLng)];
+    }
+    get mapIsReady(){
+        this.mapIsReady = false;
+        return this.mapIsReady;
     }
 
     initedMap(event){
