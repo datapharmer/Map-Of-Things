@@ -98,6 +98,8 @@ export default class MapOfThingsMap extends LightningElement {
                 			return {
                     				blob: myBlob
                 			};
+					console.log("file length: " + shapedata.length);
+	     				console.log("file type: " + shapedata.type);
             			});
 	//const shapedata = SCHOOLDISTRICTS;
 	console.log("shapefile data: " + shapedata);
@@ -114,8 +116,6 @@ export default class MapOfThingsMap extends LightningElement {
             unloadInvisibleTiles: true
         }).addTo(this.map);
 	    				console.log("shapefile with school districts details: " + SCHOOLDISTRICTS);
-	     				console.log("file length: " + shapedata.length);
-	     				console.log("file type: " + shapedata.type);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 
 		        var shpfile = new L.Shapefile(shapedata, {
