@@ -61,7 +61,8 @@ export default class MapOfThingsMap extends LightningElement {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
     connectedCallback(){
-	const shapedata = fetchData();
+	console.log("Fetch result");
+	const shapedata = fetch(SCHOOLDISTRICTS).then((response) => response.blob());
 	//const shapedata = SCHOOLDISTRICTS;
 	console.log("shapefile data: " + shapedata);
 	console.log("procesing promise");
@@ -125,11 +126,6 @@ export default class MapOfThingsMap extends LightningElement {
 				CUSTOM_EVENT_INIT, {detail: this.map}
 			));
  }
-   fetchData() {
-	   const response = fetch(SCHOOLDISTRICTS);
-	   const data = response.json();
-	   return data;
-    }
 	
     fitBounds(){
         if (this.markersExist) this.map.flyToBounds(this.bounds, {padding: FIT_BOUNDS_PADDING});
