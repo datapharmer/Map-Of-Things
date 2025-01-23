@@ -14,7 +14,7 @@ export default class MapOfThings extends LightningElement {
     map;
     records = [];
     propertiesChecked = false;
-    mapIsReady = false;
+    @api mapIsReady = false;
     recordsAreReady = false;
     
     @api tileServerUrl;
