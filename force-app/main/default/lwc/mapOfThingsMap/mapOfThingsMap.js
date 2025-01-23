@@ -85,19 +85,10 @@ export default class MapOfThingsMap extends LightningElement {
 
      drawMap(){
 	console.log("Fetch shapedata");
-	const shapedata = fetch(SCHOOLDISTRICTS)
-				.then(response => {
-    					if (!response.ok) {
-      						throw new Error('Network response for SCHOOLDISTRICTS fetch was not ok');
-    					}
-					console.log("returning blob inside fetch");
-    					return response.blob(); // Returns a promise that resolves with a Blob
-  				})
-  				.then(function (myBlob) {
-					console.log("processing blob result to return");
-                			return {blob: myBlob};
-					console.log("Blob data: " + myBlob);
-            			});
+	(async () => {
+  		const shapedata = await fetch(SCHOOLDISTRICTS)
+  		drawMap(shapedata) {
+	 
 	//const shapedata = SCHOOLDISTRICTS;
 	console.log("shapefile data: " + shapedata);
 	console.log("start drawing map");
@@ -136,6 +127,7 @@ export default class MapOfThingsMap extends LightningElement {
 				CUSTOM_EVENT_INIT, {detail: this.map}
 			));
  }
+}())
 	
     fitBounds(){
         if (this.markersExist) this.map.flyToBounds(this.bounds, {padding: FIT_BOUNDS_PADDING});
