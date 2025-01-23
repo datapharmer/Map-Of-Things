@@ -83,6 +83,8 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
      drawMap(){
+	console.log("load the blob");
+	let blob = await fetch(SCHOOLDISTRICTS).then(r => r.blob());
 	console.log("start drawing map");
         const container = this.template.querySelector(MAP_CONTAINER);
         console.log("container defined");
@@ -95,12 +97,12 @@ export default class MapOfThingsMap extends LightningElement {
             attribution: this.tileServerAttribution,
             unloadInvisibleTiles: true
         }).addTo(this.map);
-	    				console.log("start loading shapefile with school districts: " + SCHOOLDISTRICTS);
-	     				console.log("file length: " + SCHOOLDISTRICTS.length);
-	     				console.log("file type: " + SCHOOLDISTRICTS.type);
+	    				console.log("shapefile with school districts details: " + SCHOOLDISTRICTS);
+	     				console.log("file length: " + blob.length);
+	     				console.log("file type: " + blob.type);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 
-		        var shpfile = new L.Shapefile(SCHOOLDISTRICTS, {
+		        var shpfile = new L.Shapefile(blob, {
 			onEachFeature: function(feature, layer) {
 				if (feature.properties) {
 					layer.bindPopup(Object.keys(feature.properties).map(function(k) {
