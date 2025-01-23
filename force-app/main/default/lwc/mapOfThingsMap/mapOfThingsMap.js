@@ -21,9 +21,6 @@ const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.inner-map-container';
 const CUSTOM_EVENT_INIT = 'init';
-const shapedata = fetch(SCHOOLDISTRICTS).then((response) => response.blob());
-//const shapedata = SCHOOLDISTRICTS;
-console.log("shapefile data: " + shapedata);
 
 export default class MapOfThingsMap extends LightningElement {
     //drawMap = DRAWMAP_JS_URL;
@@ -88,6 +85,20 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
      drawMap(){
+	const shapedata = fetch(SCHOOLDISTRICTS)
+				.then(response => {
+    					if (!response.ok) {
+      						throw new Error('Network response for SCHOOLDISTRICTS fetch was not ok');
+    					}
+    					return response.blob(); // Returns a promise that resolves with a Blob
+  				})
+  				.then(function (myBlob) {
+                			return {
+                    				blob: myBlob
+                			};
+            			});
+	//const shapedata = SCHOOLDISTRICTS;
+	console.log("shapefile data: " + shapedata);
 	console.log("start drawing map");
         const container = this.template.querySelector(MAP_CONTAINER);
         console.log("container defined");
