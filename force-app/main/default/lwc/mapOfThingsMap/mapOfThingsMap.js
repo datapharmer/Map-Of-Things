@@ -125,7 +125,7 @@ export default class MapOfThingsMap extends LightningElement {
 			));
  }
    async function fetchData() {
-	   const response = await fetch(‘/api/data’);
+	   const response = await fetch(SCHOOLDISTRICTS);
 	   const data = await response.json();
 	   return data;
     }
