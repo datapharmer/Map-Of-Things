@@ -67,6 +67,7 @@ export default class MapOfThingsMap extends LightningElement {
 	    loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
 	    loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
 	    //loadScript(this, LEAFLET_JS + DRAWMAP_JS_URL),
+	    let blob = await fetch(SCHOOLDISTRICTS).then(r => r.blob());
             loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
             loadScript(this, LEAFLET_JS + SHPFILE_JS_URL),
 	    loadScript(this, LEAFLET_JS + SHP_JS_URL)
@@ -83,8 +84,6 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
      drawMap(){
-	console.log("load the blob");
-	let blob = await fetch(SCHOOLDISTRICTS).then(r => r.blob());
 	console.log("start drawing map");
         const container = this.template.querySelector(MAP_CONTAINER);
         console.log("container defined");
