@@ -60,7 +60,7 @@ export default class MapOfThingsMap extends LightningElement {
     renderedCallback() {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
-    connectedCallback(){
+    async connectedCallback(){
 	console.log("procesing promise");
         Promise.all([
             loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
@@ -73,6 +73,7 @@ export default class MapOfThingsMap extends LightningElement {
 	    loadScript(this, LEAFLET_JS + SHP_JS_URL)
         ])
 	.then(() => {
+		console.log("starting async for shaepdata load");
 	    	(async () => {
 			console.log("Fetch shapedata");
 			const shapedata = await fetch(SCHOOLDISTRICTS)
@@ -90,7 +91,7 @@ export default class MapOfThingsMap extends LightningElement {
             			});
 			console.log("calling drawMap");
             		this.drawMap(shapedata);
-		})
+		});
 
         })
 	.catch(function(e) {
