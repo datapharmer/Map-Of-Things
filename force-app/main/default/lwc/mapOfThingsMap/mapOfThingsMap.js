@@ -62,7 +62,7 @@ export default class MapOfThingsMap extends LightningElement {
     }
     async connectedCallback(){
 	const shapedata = await fetchData();
-	console.log(:shapefile data: " + data);
+	console.log(:shapefile data: " + shapedata);
 	console.log("procesing promise");
         Promise.all([
             loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
