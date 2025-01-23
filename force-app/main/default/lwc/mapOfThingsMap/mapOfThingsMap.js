@@ -95,11 +95,8 @@ export default class MapOfThingsMap extends LightningElement {
   				})
   				.then(function (myBlob) {
 					console.log("processing blob result to return");
-                			return {
-                    				blob: myBlob
-                			};
-					console.log("file length: " + myBlob.length);
-	     				console.log("file type: " + myBlob.type);
+                			return blob: myBlob};
+					console.log("Blob data: " + myBlob);
             			});
 	//const shapedata = SCHOOLDISTRICTS;
 	console.log("shapefile data: " + shapedata);
