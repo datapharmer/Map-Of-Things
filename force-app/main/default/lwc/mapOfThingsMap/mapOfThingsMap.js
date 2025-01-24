@@ -61,41 +61,48 @@ export default class MapOfThingsMap extends LightningElement {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
     async connectedCallback(){
-	console.log("starting async for shapedata load");    	
-	console.log("Fetch shapedata");
-	const shapedata = await fetch(SCHOOLDISTRICTS)
-		.then(response => {
-    			if (!response.ok) {
-      				throw new Error('Network response for SCHOOLDISTRICTS fetch was not ok');
-    			}
-			console.log("returning blob inside fetch");
-    			return response.blob(); // Returns a promise that resolves with a Blob
-  		})
-  		.then(function (myBlob) {
-			console.log("processing blob result to return");
-                	return {blob: myBlob};
-			
-            	});
-        Promise.all([
-            loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
-	    loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
-	    loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
-	    //loadScript(this, LEAFLET_JS + DRAWMAP_JS_URL),
-	    //let blob = await fetch(SCHOOLDISTRICTS).then(r => r.blob());
-            loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
-            loadScript(this, LEAFLET_JS + SHPFILE_JS_URL),
-	    loadScript(this, LEAFLET_JS + SHP_JS_URL)
-        ])
-	.catch(function(e) {
-   	    console.log('Error loading promise');
-   	    console.log(e);
-	    console.log(e.message);
-  	});
-	console.log("calling drawMap");
-       	this.drawMap(shapedata);
+	try {
+		console.log("starting async for shapedata load");    	
+		console.log("Fetch shapedata");
+		const shapedata = await fetch(SCHOOLDISTRICTS)
+			.then(response => {
+	    			if (!response.ok) {
+	      				throw new Error('Network response for SCHOOLDISTRICTS fetch was not ok');
+	    			}
+				console.log("returning blob inside fetch");
+	    			return response.blob(); // Returns a promise that resolves with a Blob
+	  		})
+	  		.then(function (myBlob) {
+				console.log("processing blob result to return");
+	                	return {blob: myBlob};
+				
+	            	});
+	        Promise.all([
+	            loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
+		    loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
+		    loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
+		    //loadScript(this, LEAFLET_JS + DRAWMAP_JS_URL),
+		    //let blob = await fetch(SCHOOLDISTRICTS).then(r => r.blob());
+	            loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
+	            loadScript(this, LEAFLET_JS + SHPFILE_JS_URL),
+		    loadScript(this, LEAFLET_JS + SHP_JS_URL)
+	        ])
+		.catch(function(e) {
+	   	    console.log('Error loading promise');
+	   	    console.log(e);
+		    console.log(e.message);
+	  	});
+		console.log("calling drawMap");
+	       	this.drawMap(shapedata);
+	    }
+	catch (error) {
+		console.log('Error with async');
+    		console.error(error);
+		console.log(e.message);
+  	}
     }
 	
-     async drawMap(shapedata){
+     drawMap(shapedata){
         const container = this.template.querySelector(MAP_CONTAINER);
         console.log("container defined");
 	this.map = L.map(container, { 
