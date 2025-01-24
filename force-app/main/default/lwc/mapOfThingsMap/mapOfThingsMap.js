@@ -98,7 +98,8 @@ export default class MapOfThingsMap extends LightningElement {
 	catch (error) {
 		console.log('Error with async');
     		console.error(error);
-		console.log(e.message);
+		console.log(e);
+		console.log(error.message);
   	}
     }
 	
