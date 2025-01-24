@@ -95,7 +95,7 @@ export default class MapOfThingsMap extends LightningElement {
        	this.drawMap(shapedata);
     }
 	
-     drawMap(shapedata){
+     async drawMap(shapedata){
         const container = this.template.querySelector(MAP_CONTAINER);
         console.log("container defined");
 	this.map = L.map(container, { 
