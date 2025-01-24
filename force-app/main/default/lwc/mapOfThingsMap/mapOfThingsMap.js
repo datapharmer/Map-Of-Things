@@ -73,8 +73,7 @@ export default class MapOfThingsMap extends LightningElement {
 	    loadScript(this, LEAFLET_JS + SHP_JS_URL)
         ])
 	.then(() => {
-		console.log("starting async for shaepdata load");
-	    	(async () => {
+		console.log("starting async for shapedata load");    	
 			console.log("Fetch shapedata");
 			const shapedata = await fetch(SCHOOLDISTRICTS)
 				.then(response => {
@@ -91,8 +90,6 @@ export default class MapOfThingsMap extends LightningElement {
             			});
 			console.log("calling drawMap");
             		this.drawMap(shapedata);
-		});
-
         })
 	.catch(function(e) {
    	    console.log('Error loading promise');
