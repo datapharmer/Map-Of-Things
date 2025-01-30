@@ -61,21 +61,9 @@ export default class MapOfThingsMap extends LightningElement {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
     async connectedCallback(){
-	try {
 		console.log("starting async for shapedata load");    	
 		console.log("Fetch shapedata");
-	        Promise.all([
-	            loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
-		    loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
-		    loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
-		    //loadScript(this, LEAFLET_JS + DRAWMAP_JS_URL),
-		    //let blob = await fetch(SCHOOLDISTRICTS).then(r => r.blob());
-	            loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
-	            loadScript(this, LEAFLET_JS + SHPFILE_JS_URL),
-		    loadScript(this, LEAFLET_JS + SHP_JS_URL)
-	        ])
-		.then(async function(getdist) {
-			const shapedata = await fetch(SCHOOLDISTRICTS)
+		const shapedata = await fetch(SCHOOLDISTRICTS)
 			.then(response => {
 	    			if (!response.ok) {
 	      				throw new Error('Network response for SCHOOLDISTRICTS fetch was not ok');
@@ -86,22 +74,36 @@ export default class MapOfThingsMap extends LightningElement {
 	  		.then(function (myBlob) {
 				console.log("processing blob result to return");
 	                	return {blob: myBlob};
-	            	})
-			.then(function(drawit) {
-				console.log("calling drawMap");
-	       			this.drawMap(shapedata);
-			})
-			.catch(function(getdisterr) {
-				console.log("get dist error");
-				console.log(getdisterr);
-				console.log(getdisterr.message);
-			})
+				
+	            	});
+	    	try {
+	        Promise.all([
+	            loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
+		    loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
+		    loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
+		    //loadScript(this, LEAFLET_JS + DRAWMAP_JS_URL),
+		    //let blob = await fetch(SCHOOLDISTRICTS).then(r => r.blob());
+	            loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
+	            loadScript(this, LEAFLET_JS + SHPFILE_JS_URL),
+		    loadScript(this, LEAFLET_JS + SHP_JS_URL)
+	        ])
+		.then(function(drawit) {
+			console.log("calling drawMap");
+	       		this.drawMap(shapedata);
+		}
 		.catch(function(e) {
 	   	    console.log('Error loading promise');
 	   	    console.log(e);
 		    console.log(e.message);
-	  	})
-	    });
+	  	});
+	    }
+	    catch (error) {
+		console.log('Error with async');
+    		console.error(error);
+		console.log(e);
+		console.log(error.message);
+  	   }
+    }
 	
      drawMap(shapedata){
         const container = this.template.querySelector(MAP_CONTAINER);
@@ -138,14 +140,7 @@ export default class MapOfThingsMap extends LightningElement {
 			this.dispatchEvent(new CustomEvent(
 				CUSTOM_EVENT_INIT, {detail: this.map}
 			));
-    	 };
-	},
-	catch (error) {
- 		console.log('Error with async');
-    		console.error(error);
-		console.log(e);
-		console.log(error.message);
-	};
+ }
 	
     fitBounds(){
         if (this.markersExist) this.map.flyToBounds(this.bounds, {padding: FIT_BOUNDS_PADDING});
