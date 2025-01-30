@@ -87,9 +87,9 @@ export default class MapOfThingsMap extends LightningElement {
 	            loadScript(this, LEAFLET_JS + SHPFILE_JS_URL),
 		    loadScript(this, LEAFLET_JS + SHP_JS_URL)
 	        ])
-		.then(function(drawit) {
+		.then(() => {
 			console.log("calling drawMap");
-	       		drawMap(shapedata);
+	       		this.drawMap(shapedata);
 		})
 		.catch(function(e) {
 	   	    console.log('Error loading promise');
