@@ -77,33 +77,24 @@ export default class MapOfThingsMap extends LightningElement {
 				
 	            	});
 	    	try {
-	        Promise.all([
-	            loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
-		    loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
-		    loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
-		    //loadScript(this, LEAFLET_JS + DRAWMAP_JS_URL),
-		    //let blob = await fetch(SCHOOLDISTRICTS).then(r => r.blob());
-	            loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
-	            loadScript(this, LEAFLET_JS + SHPFILE_JS_URL),
-		    loadScript(this, LEAFLET_JS + SHP_JS_URL)
-	        ])
-		.then(() => {
-			console.log("check promise outcomes");
-			result => {
+		     p1 = loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL);
+		     p2 = loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
+		     p3 = loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL);
+		     p4 = loadScript(this, LEAFLET_JS + CATILINE_JS_URL);
+		     p5 = loadScript(this, LEAFLET_JS + SHPFILE_JS_URL);
+		     p6 = loadScript(this, LEAFLET_JS + SHP_JS_URL);
+		        Promise.allSettled([p1,p2,p3,p4,p5])
+			.then(result=> {
+				console.log(result);
 				console.log("resulting from promise calling drawMap");
-	       			this.drawMap(shapedata);
-			}
-			error => {
-				console.log("erroring from promise");
-				console.log(e.message);
-			}
-		})
-		.catch(function(e) {
-	   	    console.log('Error loading promise');
-	   	    console.log(e);
-		    console.log(e.message);
-	  	})
-	    }
+		       		this.drawMap(shapedata);
+			})
+			.catch(function(e) {
+		   	    console.log('Error loading promise');
+		   	    console.log(e);
+			    console.log(e.message);
+		  	})
+		    }
 	    catch (error) {
 		console.log('Error with async');
     		console.error(error);
