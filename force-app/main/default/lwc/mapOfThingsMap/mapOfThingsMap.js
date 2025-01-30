@@ -100,8 +100,8 @@ export default class MapOfThingsMap extends LightningElement {
 	   	    console.log('Error loading promise');
 	   	    console.log(e);
 		    console.log(e.message);
-	  	});
-	    }
+	  	})
+	    });
 	
      drawMap(shapedata){
         const container = this.template.querySelector(MAP_CONTAINER);
