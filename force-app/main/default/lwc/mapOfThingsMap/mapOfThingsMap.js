@@ -102,13 +102,13 @@ export default class MapOfThingsMap extends LightningElement {
 		    console.log(e.message);
 	  	});
 	    }
-	.catch(error) {
-		console.log('Error with async');
-    		console.error(error);
-		console.log(e);
-		console.log(error.message);
-  	}
     }
+    catch (error) {
+	console.log('Error with async');
+    	console.error(error);
+	console.log(e);
+	console.log(error.message);
+  }
 	
      drawMap(shapedata){
         const container = this.template.querySelector(MAP_CONTAINER);
