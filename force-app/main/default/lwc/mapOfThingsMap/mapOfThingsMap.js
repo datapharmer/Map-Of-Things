@@ -77,6 +77,7 @@ export default class MapOfThingsMap extends LightningElement {
 				
 	            	});
 	    	try {
+		     console.log("set promises");
 		     p1 = loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL);
 		     p2 = loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
 		     p3 = loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL);
