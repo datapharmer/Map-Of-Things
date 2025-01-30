@@ -74,7 +74,7 @@ export default class MapOfThingsMap extends LightningElement {
 	            loadScript(this, LEAFLET_JS + SHPFILE_JS_URL),
 		    loadScript(this, LEAFLET_JS + SHP_JS_URL)
 	        ])
-		.then(function(getdist) {
+		.then(async function(getdist) {
 			const shapedata = await fetch(SCHOOLDISTRICTS)
 			.then(response => {
 	    			if (!response.ok) {
