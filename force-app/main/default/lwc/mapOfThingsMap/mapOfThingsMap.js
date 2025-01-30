@@ -102,13 +102,6 @@ export default class MapOfThingsMap extends LightningElement {
 		    console.log(e.message);
 	  	});
 	    }
-    }
-    catch (error) {
-	console.log('Error with async');
-    	console.error(error);
-	console.log(e);
-	console.log(error.message);
-  }
 	
      drawMap(shapedata){
         const container = this.template.querySelector(MAP_CONTAINER);
@@ -145,7 +138,14 @@ export default class MapOfThingsMap extends LightningElement {
 			this.dispatchEvent(new CustomEvent(
 				CUSTOM_EVENT_INIT, {detail: this.map}
 			));
- }
+ },
+ catch (error) {
+ 	console.log('Error with async');
+    	console.error(error);
+	console.log(e);
+	console.log(error.message);
+  }
+		
 	
     fitBounds(){
         if (this.markersExist) this.map.flyToBounds(this.bounds, {padding: FIT_BOUNDS_PADDING});
