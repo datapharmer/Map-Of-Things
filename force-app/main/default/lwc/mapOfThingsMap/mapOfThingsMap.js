@@ -130,19 +130,19 @@ export default class MapOfThingsMap extends LightningElement {
 			//} 
 		//});
 
-        var shapefile = new L.Shapefile(this.shapedata); 
+        //var shapefile = new L.Shapefile(this.shapedata); 
 
-        shapefile.then(function(layer) {
+       // shapefile.then(function(layer) {
             // Add the loaded layer to your map
             //map.addLayer(layer);
-	    map.addLayer(layer);
+	//    map.addLayer(layer);
 		
-        }).catch(function(error) {
+       // }).catch(function(error) {
 
-            console.error("Error loading shapefile:", error);
-	    console.log(error.message);
+       //     console.error("Error loading shapefile:", error);
+	//    console.log(error.message);
 
-        });
+      //  });
 	     /*
 	     		var shpfile = new L.Shapefile('schooldistricts.zip', {
 			onEachFeature: function(feature, layer) {
