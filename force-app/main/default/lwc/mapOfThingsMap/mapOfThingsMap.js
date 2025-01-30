@@ -95,7 +95,7 @@ export default class MapOfThingsMap extends LightningElement {
 				console.log("get dist error");
 				console.log(getdisterr);
 				console.log(getdisterr.message);
-			});
+			})
 		.catch(function(e) {
 	   	    console.log('Error loading promise');
 	   	    console.log(e);
