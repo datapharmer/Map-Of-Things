@@ -115,7 +115,7 @@ export default class MapOfThingsMap extends LightningElement {
             attribution: this.tileServerAttribution,
             unloadInvisibleTiles: true
         }).addTo(this.map);
-	    				console.log("shapefile with school districts details: " + shapedata);
+	    				console.log("shapefile with school districts details: " + this.shapedata);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 
 		        //const shpfile = new L.Shapefile(shapedata, {
@@ -130,19 +130,19 @@ export default class MapOfThingsMap extends LightningElement {
 			//} 
 		//});
 
-        //var shapefile = new L.Shapefile(this.shapedata); 
+        var shapefile = new L.Shapefile(shapedata); 
 
-       // shapefile.then(function(layer) {
-            // Add the loaded layer to your map
+        shapefile.then(function(layer) {
+             Add the loaded layer to your map
             //map.addLayer(layer);
-	//    map.addLayer(layer);
+	this.map.addLayer(layer);
 		
-       // }).catch(function(error) {
+        }).catch(function(error) {
 
-       //     console.error("Error loading shapefile:", error);
-	//    console.log(error.message);
+            console.error("Error loading shapefile:", error);
+	    console.log(error.message);
 
-      //  });
+        });
 	     /*
 	     		var shpfile = new L.Shapefile('schooldistricts.zip', {
 			onEachFeature: function(feature, layer) {
