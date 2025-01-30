@@ -118,7 +118,7 @@ export default class MapOfThingsMap extends LightningElement {
 	    				console.log("shapefile with school districts details: " + shapedata);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 
-		        //shpfile = "stuff"; //troubleshooting//new L.Shapefile(shapedata, {
+		        const shpfile = 'stuff'; //troubleshooting//new L.Shapefile(shapedata, {
 			/*onEachFeature: function(feature, layer) {
 				if (feature.properties) {
 					layer.bindPopup(Object.keys(feature.properties).map(function(k) {
