@@ -138,13 +138,13 @@ export default class MapOfThingsMap extends LightningElement {
 			this.dispatchEvent(new CustomEvent(
 				CUSTOM_EVENT_INIT, {detail: this.map}
 			));
- },
- catch (error) {
+ };
+},
+catch (error) {
  	console.log('Error with async');
     	console.error(error);
 	console.log(e);
 	console.log(error.message);
-  }
 		
 	
     fitBounds(){
