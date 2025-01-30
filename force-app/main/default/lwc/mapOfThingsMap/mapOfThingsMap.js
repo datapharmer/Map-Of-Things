@@ -140,6 +140,7 @@ export default class MapOfThingsMap extends LightningElement {
         }).catch(function(error) {
 
             console.error("Error loading shapefile:", error);
+	    console.log(error.message);
 
         });
 	     /*
