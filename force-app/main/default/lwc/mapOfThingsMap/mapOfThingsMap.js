@@ -100,7 +100,7 @@ export default class MapOfThingsMap extends LightningElement {
 		console.log(e);
 		console.log(error.message);
   	   }
-	   this.drawMap(shapedata);
+	   this.drawMap(SCHOOLDISTRICTS);
     }
 	
      drawMap(shapedata){
