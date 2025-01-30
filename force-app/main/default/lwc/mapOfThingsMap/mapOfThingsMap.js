@@ -105,7 +105,7 @@ export default class MapOfThingsMap extends LightningElement {
   	   }
     }
 	
-     drawMap(shapedata){
+     drawMap(myshapedata){
         const container = this.template.querySelector(MAP_CONTAINER);
         console.log("container defined: " + container);
 	this.map = L.map(container, { 
@@ -117,10 +117,10 @@ export default class MapOfThingsMap extends LightningElement {
             attribution: this.tileServerAttribution,
             unloadInvisibleTiles: true
         }).addTo(this.map);
-	    				console.log("shapefile with school districts details: " + SCHOOLDISTRICTS);
+	    				//console.log("shapefile with school districts details: " + SCHOOLDISTRICTS);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 
-		        //var shpfile = new L.Shapefile(shapedata, {
+		        //var shpfile = new L.Shapefile(myshapedata, {
 			//onEachFeature: function(feature, layer) {
 				//if (feature.properties) {
 					//layer.bindPopup(Object.keys(feature.properties).map(function(k) {
