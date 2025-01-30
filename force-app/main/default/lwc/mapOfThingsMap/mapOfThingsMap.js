@@ -64,19 +64,6 @@ export default class MapOfThingsMap extends LightningElement {
 	try {
 		console.log("starting async for shapedata load");    	
 		console.log("Fetch shapedata");
-		const shapedata = await fetch(SCHOOLDISTRICTS)
-			.then(response => {
-	    			if (!response.ok) {
-	      				throw new Error('Network response for SCHOOLDISTRICTS fetch was not ok');
-	    			}
-				console.log("returning blob inside fetch");
-	    			return response.blob(); // Returns a promise that resolves with a Blob
-	  		})
-	  		.then(function (myBlob) {
-				console.log("processing blob result to return");
-	                	return {blob: myBlob};
-				
-	            	});
 	        Promise.all([
 	            loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
 		    loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
@@ -87,15 +74,35 @@ export default class MapOfThingsMap extends LightningElement {
 	            loadScript(this, LEAFLET_JS + SHPFILE_JS_URL),
 		    loadScript(this, LEAFLET_JS + SHP_JS_URL)
 	        ])
+		.then(function(getdist) {
+			const shapedata = await fetch(SCHOOLDISTRICTS)
+			.then(response => {
+	    			if (!response.ok) {
+	      				throw new Error('Network response for SCHOOLDISTRICTS fetch was not ok');
+	    			}
+				console.log("returning blob inside fetch");
+	    			return response.blob(); // Returns a promise that resolves with a Blob
+	  		})
+	  		.then(function (myBlob) {
+				console.log("processing blob result to return");
+	                	return {blob: myBlob};
+	            	})
+			.then(function(drawit) {
+				console.log("calling drawMap");
+	       			this.drawMap(shapedata);
+			})
+			.catch(function(getdisterr) {
+				console.log("get dist error");
+				console.log(getdisterr);
+				console.log(getdisterr.message);
+			});
 		.catch(function(e) {
 	   	    console.log('Error loading promise');
 	   	    console.log(e);
 		    console.log(e.message);
 	  	});
-		console.log("calling drawMap");
-	       	this.drawMap(shapedata);
 	    }
-	catch (error) {
+	catch(error) {
 		console.log('Error with async');
     		console.error(error);
 		console.log(e);
