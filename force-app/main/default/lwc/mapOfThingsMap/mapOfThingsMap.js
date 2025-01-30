@@ -95,7 +95,7 @@ export default class MapOfThingsMap extends LightningElement {
 	   	    console.log('Error loading promise');
 	   	    console.log(e);
 		    console.log(e.message);
-	  	});
+	  	})
 	    }
 	    catch (error) {
 		console.log('Error with async');
