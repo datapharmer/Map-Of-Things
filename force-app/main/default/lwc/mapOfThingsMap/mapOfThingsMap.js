@@ -131,8 +131,14 @@ export default class MapOfThingsMap extends LightningElement {
 		//});
 
         //var shapefile =  new L.Shapefile();//new L.Shapefile(shapedata); 
-	L.Shapefile(shapedata, {});
-	console.log("shapefile instantiated");
+	var shapedata = L.Shapefile(shapedata, {})
+		.then(() => { console.log("shapefile instantiated");
+			    }
+		.catch(function(e) {
+	   	    console.log('Error with shapefile processing');
+	   	    console.log(e);
+		    console.log(e.message);
+	  	})
        /* shapefile.then(function(layer) {
              //Add the loaded layer to your map
             //map.addLayer(layer);
