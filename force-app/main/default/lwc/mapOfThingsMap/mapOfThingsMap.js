@@ -1,12 +1,6 @@
 import { LightningElement, api } from 'lwc';
 import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
-//import LEAFLETADDON from '@salesforce/resourceUrl/leafletjs_marker_rotate_addon';
-//import LEAFLETCUSTOM from '@salesforce/resourceUrl/leaflet_custom_css';
-//import CATILINE from'@salesforce/resourceUrl/catiline';
-//import SHPFILE from'@salesforce/resourceUrl/leafletshpfile';
-//import SHP from '@salesforce/resourceUrl/shp';
-//import DRAWMAP from '@salesforce/resourceUrl/drawmap'
 import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts';
 
 const LEAFLET_CSS_URL = '/leaflet.css';
@@ -15,15 +9,12 @@ const LEAFLETADDON_JS_URL = '/leafletjs_marker_rotate_addon.js';
 const CATILINE_JS_URL = '/catiline.js';
 const SHPFILE_JS_URL = '/leaflet.shpfile.js';
 const SHP_JS_URL = '/shp.js';
-//const DRAWMAP_JS_URL = '/drawmap.js';
-//const SCHOOLDISTRICTS_URL = '/schooldistricts.zip';
 const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.inner-map-container';
 const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
-    //drawMap = DRAWMAP_JS_URL;
 	
     map;    
     _markers = [];
@@ -117,18 +108,6 @@ export default class MapOfThingsMap extends LightningElement {
         }).addTo(this.map);
 	    				console.log("shapefile with school districts details: " + shapedata);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
-
-		        //const shpfile = new L.Shapefile(shapedata, {
-			//onEachFeature: function(feature, layer) {
-			//	if (feature.properties) {
-			//		layer.bindPopup(Object.keys(feature.properties).map(function(k) {
-			//			return k + ": " + feature.properties[k];
-			//		}).join("<br />"), {
-			//			maxHeight: 200
-			//		});
-			//	}
-			//} 
-		//});
 	console.log("catiline: " + LEAFLET_JS + CATILINE_JS_URL);
 	console.log("shpfile: " + LEAFLET_JS + SHPFILE_JS_URL);
 	console.log("shp url: " + LEAFLET_JS + SHP_JS_URL);
@@ -138,64 +117,41 @@ export default class MapOfThingsMap extends LightningElement {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const buffer = await response.arrayBuffer();// changed to arrayBuffer
-           const shpfile = new L.Shapefile(buffer, {
-                onEachFeature: (feature, layer) => {
-                    if (feature.properties) {
-                        // Bind popup using a function, NO INLINE HTML or JS
-                        layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
+            try {
+                const shpfile = new L.Shapefile(buffer, {
+                    onEachFeature: (feature, layer) => {
+                        if (feature.properties) {
+                            layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
+                        }
                     }
-                }
-            });
+                });
 
-            shpfile.addTo(this.map); // Add the shapefile to the map
+                shpfile.addTo(this.map);
 
-            shpfile.once("data:loaded", () => {
-                console.log("Shapefile data loaded!");
-                if (this.autoFitBounds) {
-                    // Fit bounds after the data is loaded and added to the map
-                    const bounds = shpfile.getBounds();
-                    if (bounds.isValid()) { // Check if bounds are valid before fitting
-                        this.map.fitBounds(bounds);
-                    } else {
-                        console.warn("Invalid bounds for shapefile, cannot fit bounds.");
+                shpfile.once("data:loaded", () => {
+                    console.log("Shapefile data loaded!");
+                    if (this.autoFitBounds) {
+                        const bounds = shpfile.getBounds();
+                        if (bounds.isValid()) {
+                            this.map.fitBounds(bounds);
+                        } else {
+                            console.warn("Invalid bounds for shapefile (empty or malformed).");
+                        }
                     }
-                }
-            });
+                });
 
+                shpfile.once("error", (error) => { // Handle errors during shapefile loading
+                    console.error("Error loading shapefile:", error);
+                });
 
+            } catch (shpError) {
+                console.error("Error parsing shapefile:", shpError); // Catch parsing errors
+            }
         } catch (error) {
             console.error("Error loading or parsing shapefile:", error);
-        }
-       /* shapefile.then(function(layer) {
-             //Add the loaded layer to your map
-            //map.addLayer(layer);
-	this.map.addLayer(layer);
-		
-        }).catch(function(error) {
-
-            console.error("Error loading shapefile:", error);
-	    console.log(error.message);
-
-        });*/
-	     /*
-	     		var shpfile = new L.Shapefile('schooldistricts.zip', {
-			onEachFeature: function(feature, layer) {
-				if (feature.properties) {
-					layer.bindPopup(Object.keys(feature.properties).map(function(k) {
-						return k + ": " + feature.properties[k];
-					}).join("<br />"), {
-						maxHeight: 200
-					});
-				}
-			}
-		}); */
-	     
+        }	     
 		console.log("adding shapedata to map via shpfile");
-		//shpfile.addTo(this.map);
 	    		console.log("shapefile data added to map");
-			//shpfile.once("data:loaded", function() {
-				console.log("finished loaded shapefile");
-			//});
 			this.dispatchEvent(new CustomEvent(
 				CUSTOM_EVENT_INIT, {detail: this.map}
 			));
