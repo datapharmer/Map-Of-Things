@@ -130,7 +130,7 @@ export default class MapOfThingsMap extends LightningElement {
 			//} 
 		//});
 
-        var shapefile = shapedata; //new L.Shapefile(shapedata); 
+        var shapefile =  new L.Shapefile();//new L.Shapefile(shapedata); 
 	console.log("shapefile instantiated");
        /* shapefile.then(function(layer) {
              //Add the loaded layer to your map
