@@ -129,7 +129,9 @@ export default class MapOfThingsMap extends LightningElement {
 			//	}
 			//} 
 		//});
-
+	console.log("catiline: " + LEAFLET_JS + CATILINE_JS_URL);
+	console.log("shpfile: " + LEAFLET_JS + SHPFILE_JS_URL);
+	console.log("shp url: " + LEAFLET_JS + SHP_JS_URL);
         var shapefile =  new L.Shapefile();//new L.Shapefile(shapedata); 
        /* shapefile.then(function(layer) {
              //Add the loaded layer to your map
