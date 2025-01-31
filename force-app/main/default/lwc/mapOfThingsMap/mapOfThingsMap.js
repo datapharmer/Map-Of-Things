@@ -136,7 +136,7 @@ export default class MapOfThingsMap extends LightningElement {
 	     var shapefile =  new L.Shapefile();//new L.Shapefile(shapedata); 
 	}
 	catch (error) {
-		console.log('shapefile');
+		console.log('shapefile error');
 		console.log(error);
 		console.log(error.message);
   	   }
