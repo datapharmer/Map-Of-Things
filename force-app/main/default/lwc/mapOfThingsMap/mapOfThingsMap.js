@@ -49,28 +49,22 @@ export default class MapOfThingsMap extends LightningElement {
         return [];
     }
 
-   createWorkerFunction(importUrl, isArrayBuffer) {
-        return new Promise((resolve, reject) => {
-            fetch(importUrl) // Fetch the worker script as text
-                .then(response => response.text())
-                .then(workerCode => {
-                    const modifiedWorkerCode = `
-                        importScripts("${importUrl}"); // keep this for shp.js
-                        self.onmessage = function(event) {
-                            const data = event.data;
-                            if (!${isArrayBuffer}) {
-                                shp(data).then(cb => self.postMessage(cb));
-                            } else {
-                                self.postMessage(shp.parseZip(data));
-                            }
-                        };
-                    `;
-                    const blob = new Blob([modifiedWorkerCode], { type: 'text/javascript' }); // Use 'text/javascript'
-                    const blobURL = URL.createObjectURL(blob);
-                    resolve(blobURL);
-                })
-                .catch(error => reject(error)); // Handle fetch errors
-        });
+
+    async createWorkerFunction(importUrl, isArrayBuffer) {
+        try {
+            const response = await fetch(importUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const blob = await response.blob(); // Fetch as Blob directly
+
+            const workerURL = URL.createObjectURL(blob);
+            return workerURL;
+
+        } catch (error) {
+            console.error('Error fetching worker script:', error);
+            throw error; // Re-throw to handle in connectedCallback
+        }
     }
 
 
@@ -99,7 +93,7 @@ export default class MapOfThingsMap extends LightningElement {
 				loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
 				loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
 				loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
-				loadScript(this, LEAFLET_JS + SHP_JS_URL),
+				//loadScript(this, LEAFLET_JS + SHP_JS_URL),
 				loadScript(this, LEAFLET_JS + SHPFILE_JS_URL)
 	        ])
 		.then(() => {
@@ -116,13 +110,13 @@ export default class MapOfThingsMap extends LightningElement {
 		console.log(error);
 		console.log(error.message);
   	   }
-		const shpWorkerURL = await this.createWorkerFunction(LEAFLET_JS + SHP_JS_URL, false);
+            const shpWorkerURL = await this.createWorkerFunction(LEAFLET_JS + SHP_JS_URL, false);
 
-            		// Use the blob URL when creating the worker
-            		if (typeof cw !== 'undefined') {
-                		this.worker = cw(shpWorkerURL);
-            		}
-	   	this.drawMap(SCHOOLDISTRICTS);
+            if (typeof cw !== 'undefined') {
+                this.worker = cw(shpWorkerURL);
+            }
+
+	    this.drawMap(SCHOOLDISTRICTS);
     }
 	
      async drawMap(shapedata){
