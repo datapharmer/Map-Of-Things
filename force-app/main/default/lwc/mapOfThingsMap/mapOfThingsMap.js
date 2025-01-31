@@ -115,7 +115,7 @@ export default class MapOfThingsMap extends LightningElement {
             attribution: this.tileServerAttribution,
             unloadInvisibleTiles: true
         }).addTo(this.map);
-	    				console.log("shapefile with school districts details: " + this.shapedata);
+	    				console.log("shapefile with school districts details: " + shapedata);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 
 		        //const shpfile = new L.Shapefile(shapedata, {
@@ -131,7 +131,7 @@ export default class MapOfThingsMap extends LightningElement {
 		//});
 
         var shapefile = new L.Shapefile(shapedata); 
-
+	console.log("shapefile instantiated");
         shapefile.then(function(layer) {
              //Add the loaded layer to your map
             //map.addLayer(layer);
