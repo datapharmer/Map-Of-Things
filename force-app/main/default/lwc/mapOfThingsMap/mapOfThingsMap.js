@@ -138,14 +138,11 @@ export default class MapOfThingsMap extends LightningElement {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const buffer = await response.arrayBuffer();// changed to arrayBuffer
-            const shpfile = new L.Shapefile(buffer, { // Pass the ArrayBuffer directly
+           const shpfile = new L.Shapefile(buffer, {
                 onEachFeature: (feature, layer) => {
                     if (feature.properties) {
-                        layer.bindPopup(Object.keys(feature.properties).map(k => {
-                            return `${k}: ${feature.properties[k]}`;
-                        }).join("<br />"), {
-                            maxHeight: 200
-                        });
+                        // Bind popup using a function, NO INLINE HTML or JS
+                        layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
                     }
                 }
             });
@@ -203,6 +200,16 @@ export default class MapOfThingsMap extends LightningElement {
 				CUSTOM_EVENT_INIT, {detail: this.map}
 			));
  }
+
+  generatePopupContent(properties) {
+      let content = '';
+      for (const key in properties) {
+          if (properties.hasOwnProperty(key)) {
+              content += `${key}: ${properties[key]}<br>`;
+          }
+      }
+      return content;
+  }
 	
     fitBounds(){
         if (this.markersExist) this.map.flyToBounds(this.bounds, {padding: FIT_BOUNDS_PADDING});
