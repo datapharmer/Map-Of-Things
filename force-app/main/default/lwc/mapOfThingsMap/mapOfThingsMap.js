@@ -97,8 +97,7 @@ export default class MapOfThingsMap extends LightningElement {
 	    }
 	    catch (error) {
 		console.log('Error with async');
-    		console.error(error);
-		console.log(e);
+		console.log(error);
 		console.log(error.message);
   	   }
 	   this.drawMap(SCHOOLDISTRICTS);
@@ -137,9 +136,8 @@ export default class MapOfThingsMap extends LightningElement {
 	     var shapefile =  new L.Shapefile();//new L.Shapefile(shapedata); 
 	}
 	catch (error) {
-		console.log('Error with async');
-    		console.error(error);
-		console.log(e);
+		console.log('shapefile');
+		console.log(error);
 		console.log(error.message);
   	   }
        /* shapefile.then(function(layer) {
