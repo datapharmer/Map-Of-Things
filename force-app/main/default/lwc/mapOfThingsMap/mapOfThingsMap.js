@@ -49,6 +49,31 @@ export default class MapOfThingsMap extends LightningElement {
         return [];
     }
 
+   createWorkerFunction(importUrl, isArrayBuffer) {
+        return new Promise((resolve, reject) => {
+            fetch(importUrl) // Fetch the worker script as text
+                .then(response => response.text())
+                .then(workerCode => {
+                    const modifiedWorkerCode = `
+                        importScripts("${importUrl}"); // keep this for shp.js
+                        self.onmessage = function(event) {
+                            const data = event.data;
+                            if (!${isArrayBuffer}) {
+                                shp(data).then(cb => self.postMessage(cb));
+                            } else {
+                                self.postMessage(shp.parseZip(data));
+                            }
+                        };
+                    `;
+                    const blob = new Blob([modifiedWorkerCode], { type: 'text/javascript' }); // Use 'text/javascript'
+                    const blobURL = URL.createObjectURL(blob);
+                    resolve(blobURL);
+                })
+                .catch(error => reject(error)); // Handle fetch errors
+        });
+    }
+
+
     renderedCallback() {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
@@ -91,7 +116,13 @@ export default class MapOfThingsMap extends LightningElement {
 		console.log(error);
 		console.log(error.message);
   	   }
-	   this.drawMap(SCHOOLDISTRICTS);
+		const shpWorkerURL = await this.createWorkerFunction(LEAFLET_JS + SHP_JS_URL, false);
+
+            		// Use the blob URL when creating the worker
+            		if (typeof cw !== 'undefined') {
+                		this.worker = cw(shpWorkerURL);
+            		}
+	   	this.drawMap(SCHOOLDISTRICTS);
     }
 	
      async drawMap(shapedata){
