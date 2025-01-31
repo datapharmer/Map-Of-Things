@@ -1,48 +1,27 @@
-'use strict';
+	'use strict';
 
 /* global cw, shp */
 L.Shapefile = L.GeoJSON.extend({
     options: {
         importUrl: 'shp.js',
-        isArrayBuffer: false // Corrected typo
+        isArrayBuffer: false
     },
 
-    initialize: function(file, options) {
+     initialize: function(file, options) {
         L.Util.setOptions(this, options);
 
         if (typeof cw !== 'undefined') {
-            if (!options.isArrayBuffer) {
-                this.worker = cw(this.createWorkerFunction(this.options.importUrl, false));
-            } else {
-                this.worker = cw(this.createWorkerFunction(this.options.importUrl, true));
-            }
+            this.worker = cw(this.createWorkerFunction(this.options.importUrl)); // No need to pass isArrayBuffer here
         }
 
-        L.GeoJSON.prototype.initialize.call(this, {
-            features: []
-        }, options);
+        L.GeoJSON.prototype.initialize.call(this, { features: [] }, options);
         this.addFileData(file);
     },
 
-    createWorkerFunction: function(importUrl, isArrayBuffer) {
-        // Create a Blob containing the worker function code
-        const workerCode = `
-            importScripts("${importUrl}");
-            self.onmessage = function(event) {
-                const data = event.data;
-                if (!${isArrayBuffer}) {
-                    shp(data).then(cb => self.postMessage(cb));
-                } else {
-                    self.postMessage(shp.parseZip(data));
-                }
-            };
-        `;
-
-        const blob = new Blob([workerCode], { type: 'application/javascript' });
-        const blobURL = URL.createObjectURL(blob);
-        return blobURL; // Return URL for the worker
+    createWorkerFunction: function(importUrl) {  // importUrl is now the name of the static resource
+        const workerURL = `/resource/${importUrl}`; // Construct the URL directly
+        return workerURL; // Return the URL
     },
-
 
     addFileData: function(file) {
         var self = this;
@@ -66,9 +45,9 @@ L.Shapefile = L.GeoJSON.extend({
 
         var promise;
         if (this.options.isArrayBuffer) {
-            promise = this.worker.data(file, [file]);
+            promise = this.worker.data({ data: file, isArrayBuffer: true }, [file]); // Send isArrayBuffer in the message
         } else {
-            promise = this.worker.data(cw.makeUrl(file));
+            promise = this.worker.data({ data: file, isArrayBuffer: false }); // Send isArrayBuffer in the message
         }
 
         promise.then(function(data) {
