@@ -133,13 +133,42 @@ export default class MapOfThingsMap extends LightningElement {
 	console.log("shpfile: " + LEAFLET_JS + SHPFILE_JS_URL);
 	console.log("shp url: " + LEAFLET_JS + SHP_JS_URL);
         try {
-	     var shapefile =  new L.Shapefile();//new L.Shapefile(shapedata); 
-	}
-	catch (error) {
-		console.log('shapefile error');
-		console.log(error);
-		console.log(error.message);
-  	   }
+            const response = await fetch(SCHOOLDISTRICTS);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const buffer = await response.arrayBuffer();// changed to arrayBuffer
+            const shpfile = new L.Shapefile(buffer, { // Pass the ArrayBuffer directly
+                onEachFeature: (feature, layer) => {
+                    if (feature.properties) {
+                        layer.bindPopup(Object.keys(feature.properties).map(k => {
+                            return `${k}: ${feature.properties[k]}`;
+                        }).join("<br />"), {
+                            maxHeight: 200
+                        });
+                    }
+                }
+            });
+
+            shpfile.addTo(this.map); // Add the shapefile to the map
+
+            shpfile.once("data:loaded", () => {
+                console.log("Shapefile data loaded!");
+                if (this.autoFitBounds) {
+                    // Fit bounds after the data is loaded and added to the map
+                    const bounds = shpfile.getBounds();
+                    if (bounds.isValid()) { // Check if bounds are valid before fitting
+                        this.map.fitBounds(bounds);
+                    } else {
+                        console.warn("Invalid bounds for shapefile, cannot fit bounds.");
+                    }
+                }
+            });
+
+
+        } catch (error) {
+            console.error("Error loading or parsing shapefile:", error);
+        }
        /* shapefile.then(function(layer) {
              //Add the loaded layer to your map
             //map.addLayer(layer);
