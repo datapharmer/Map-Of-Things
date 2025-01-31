@@ -34,6 +34,7 @@ export default class MapOfThingsMap extends LightningElement {
     @api mapDefaultPosition;
     @api mapDefaultZoomLevel;
     @api autoFitBounds;
+    @api Shapefile;
     @api
     get markers(){
         return this._markers;
