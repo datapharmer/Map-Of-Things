@@ -133,7 +133,15 @@ export default class MapOfThingsMap extends LightningElement {
 	console.log("catiline: " + LEAFLET_JS + CATILINE_JS_URL);
 	console.log("shpfile: " + LEAFLET_JS + SHPFILE_JS_URL);
 	console.log("shp url: " + LEAFLET_JS + SHP_JS_URL);
-        var shapefile =  new L.Shapefile();//new L.Shapefile(shapedata); 
+        try {
+	     var shapefile =  new L.Shapefile();//new L.Shapefile(shapedata); 
+	}
+	catch (error) {
+		console.log('Error with async');
+    		console.error(error);
+		console.log(e);
+		console.log(error.message);
+  	   }
        /* shapefile.then(function(layer) {
              //Add the loaded layer to your map
             //map.addLayer(layer);
