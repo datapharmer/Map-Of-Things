@@ -116,49 +116,40 @@ export default class MapOfThingsMap extends LightningElement {
 	console.log("shpfile: " + LEAFLET_JS + SHPFILE_JS_URL);
 	console.log("shp url: " + LEAFLET_JS + SHP_JS_URL);
 	     
-        try { 
-            const response = await fetch(SCHOOLDISTRICTS).arrayBuffer();
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-		    return;
+try {
+    const response = await fetch(SCHOOLDISTRICTS);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const arrayBuffer = await response.arrayBuffer(); // Ensure we get the data as an ArrayBuffer
+    console.log("Shapefile fetched successfully!");
+    const shpfile = new L.Shapefile(arrayBuffer, {
+        onEachFeature: (feature, layer) => {
+            if (feature.properties) {
+                layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
             }
-            try {
-		console.log("get shpfile via arraybuffer");
-  
-                const shpfile = new L.Shapefile(response, {
-                    onEachFeature: (feature, layer) => {
-                        if (feature.properties) {
-                            layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
-                        }
-                    }
-                });
-		console.log("add shpfile to map");
-                shpfile.addTo(this.map);
+        }
+    });
+    shpfile.addTo(this.map);
 
-                shpfile.once("data:loaded", () => {
-                    console.log("Shapefile data loaded!");
-                    if (this.autoFitBounds) {
-                        const bounds = shpfile.getBounds();
-                        if (bounds.isValid()) {
-                            this.map.fitBounds(bounds);
-                        } else {
-                            console.warn("Invalid bounds for shapefile (empty or malformed).");
-                        }
-                    }
-                });
-
-                shpfile.once("error", (error) => { // Handle errors during shapefile loading
-                    console.error("Error loading shapefile:", error);
-                });
-
-            } catch (shpError) {
-                console.error("Error parsing shapefile:", shpError); // Catch parsing errors
-		return;
+    shpfile.once("data:loaded", () => {
+        console.log("Shapefile data loaded!");
+        if (this.autoFitBounds) {
+            const bounds = shpfile.getBounds();
+            if (bounds.isValid()) {
+                this.map.fitBounds(bounds);
+            } else {
+                console.warn("Invalid bounds for shapefile (empty or malformed).");
             }
-        } catch (error) {
-            console.error("Error loading or parsing shapefile:", error);
-	    return;
-        }	     
+        }
+    });
+
+    shpfile.once("error", (error) => {
+        console.error("Error loading shapefile:", error);
+    });
+} catch (error) {
+    console.error("Error loading or parsing shapefile:", error);
+}     
 	    		console.log("shapefile data added to map");
 			this.dispatchEvent(new CustomEvent(
 				CUSTOM_EVENT_INIT, {detail: this.map}
