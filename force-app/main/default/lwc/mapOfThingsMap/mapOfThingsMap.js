@@ -116,17 +116,16 @@ export default class MapOfThingsMap extends LightningElement {
 	console.log("shpfile: " + LEAFLET_JS + SHPFILE_JS_URL);
 	console.log("shp url: " + LEAFLET_JS + SHP_JS_URL);
 	     
-        try { /*
-            const response = await fetch(SCHOOLDISTRICTS);
+        try { 
+            const response = await fetch(SCHOOLDISTRICTS).arrayBuffer();
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
 		    return;
             }
-            const buffer = await response.arrayBuffer();// changed to arrayBuffer
             try {
 		console.log("get shpfile via arraybuffer");
-  */
-                const shpfile = new L.Shapefile(SCHOOLDISTRICTS, {
+  
+                const shpfile = new L.Shapefile(response, {
                     onEachFeature: (feature, layer) => {
                         if (feature.properties) {
                             layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
@@ -156,10 +155,10 @@ export default class MapOfThingsMap extends LightningElement {
                 console.error("Error parsing shapefile:", shpError); // Catch parsing errors
 		return;
             }
-        /*} catch (error) {
+        } catch (error) {
             console.error("Error loading or parsing shapefile:", error);
 	    return;
-        }	*/     
+        }	     
 	    		console.log("shapefile data added to map");
 			this.dispatchEvent(new CustomEvent(
 				CUSTOM_EVENT_INIT, {detail: this.map}
