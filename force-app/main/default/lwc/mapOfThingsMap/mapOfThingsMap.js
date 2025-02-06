@@ -118,8 +118,10 @@ export default class MapOfThingsMap extends LightningElement {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
+	    console.log("setting buffer");
             const buffer = await response.arrayBuffer();// changed to arrayBuffer
             try {
+		console.log("defining shpfile");
                 const shpfile = new L.Shapefile(buffer, {
                     onEachFeature: (feature, layer) => {
                         if (feature.properties) {
@@ -151,8 +153,8 @@ export default class MapOfThingsMap extends LightningElement {
             console.error("Error loading or parsing shapefile:", error);
         }	     
 		console.log("adding shapedata to map via shpfile");
-	     	//shpfile.addTo(this.map);
-	     	shpfile.appendChild(this.map);
+	     	shpfile.addTo(this.map);
+	     	//shpfile.appendChild(this.map);
 	    	console.log("shapefile data added to map");
 		this.dispatchEvent(new CustomEvent(
 			CUSTOM_EVENT_INIT, {detail: this.map}
