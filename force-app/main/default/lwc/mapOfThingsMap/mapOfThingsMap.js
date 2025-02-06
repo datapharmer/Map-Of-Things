@@ -54,6 +54,7 @@ export default class MapOfThingsMap extends LightningElement {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
     async connectedCallback(){
+	    /*
 		console.log("starting async for shapedata load");    	
 		console.log("Fetch shapedata");
 		const shapedata = await fetch(SCHOOLDISTRICTS)
@@ -68,7 +69,8 @@ export default class MapOfThingsMap extends LightningElement {
 				console.log("processing blob result to return");
 	                	return {blob: myBlob};
 				
-	            	});
+	            	}); 
+	      */
 	    	try {
 	        await Promise.all([
 	            loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
@@ -117,9 +119,11 @@ export default class MapOfThingsMap extends LightningElement {
             const response = await fetch(SCHOOLDISTRICTS);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
+		    return;
             }
             const buffer = await response.arrayBuffer();// changed to arrayBuffer
             try {
+		console.log("get shpfile via arraybuffer");
                 const shpfile = new L.Shapefile(buffer, {
                     onEachFeature: (feature, layer) => {
                         if (feature.properties) {
@@ -148,9 +152,11 @@ export default class MapOfThingsMap extends LightningElement {
 
             } catch (shpError) {
                 console.error("Error parsing shapefile:", shpError); // Catch parsing errors
+		return;
             }
         } catch (error) {
             console.error("Error loading or parsing shapefile:", error);
+	    return;
         }	     
 	    		console.log("shapefile data added to map");
 			this.dispatchEvent(new CustomEvent(
