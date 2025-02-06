@@ -127,7 +127,7 @@ export default class MapOfThingsMap extends LightningElement {
                         }
                     }
                 });
-
+		console.log("add shpfile to map");
                 shpfile.addTo(this.map);
 
                 shpfile.once("data:loaded", () => {
@@ -152,7 +152,6 @@ export default class MapOfThingsMap extends LightningElement {
         } catch (error) {
             console.error("Error loading or parsing shapefile:", error);
         }	     
-		console.log("adding shapedata to map via shpfile");
 	    		console.log("shapefile data added to map");
 			this.dispatchEvent(new CustomEvent(
 				CUSTOM_EVENT_INIT, {detail: this.map}
