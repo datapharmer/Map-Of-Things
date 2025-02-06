@@ -98,60 +98,54 @@ export default class MapOfThingsMap extends LightningElement {
 	    this.drawMap();
     }
 	
-     async drawMap(){
-        const container = this.template.querySelector(MAP_CONTAINER);
-        console.log("container defined: " + container);
-	this.map = L.map(container, { 
-            zoomControl: true, tap:false   
-        }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);  
-	console.log("mapping set");
-        L.tileLayer(this.tileServerUrl, {
-            minZoom: MIN_ZOOM,
-            attribution: this.tileServerAttribution,
-            unloadInvisibleTiles: true
-        }).addTo(this.map);
-	    console.log("shapefile with school districts details: " + SCHOOLDISTRICTS);
-	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
-	console.log("catiline: " + LEAFLET_JS + CATILINE_JS_URL);
-	console.log("shpfile: " + LEAFLET_JS + SHPFILE_JS_URL);
-	console.log("shp url: " + LEAFLET_JS + SHP_JS_URL);
-	     
-try {
-    const shpfile = new L.Shapefile(SCHOOLDISTRICTS, {
-    onEachFeature: (feature, layer) => {
-        if (feature.properties) {
-            layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
-        }
-    }
-});
-    shpfile.addTo(this.map);
+async drawMap() {
+    const container = this.template.querySelector(MAP_CONTAINER);
+    console.log("container defined: " + container);
+    this.map = L.map(container, {
+        zoomControl: true,
+        tap: false
+    }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);
+    console.log("mapping set");
 
-    shpfile.once("data:loaded", () => {
-        console.log("Shapefile data loaded!");
+    L.tileLayer(this.tileServerUrl, {
+        minZoom: MIN_ZOOM,
+        attribution: this.tileServerAttribution,
+        unloadInvisibleTiles: true
+    }).addTo(this.map);
+
+    console.log("shapefile with school districts details: " + SCHOOLDISTRICTS);
+
+    try {
+        const geojson = await shp(SCHOOLDISTRICTS); // Load shapefile from .zip
+        console.log("Shapefile fetched and parsed successfully!");
+
+        L.geoJSON(geojson, {
+            onEachFeature: (feature, layer) => {
+                if (feature.properties) {
+                    layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
+                }
+            }
+        }).addTo(this.map);
+
         if (this.autoFitBounds) {
-            const bounds = shpfile.getBounds();
+            const bounds = L.geoJSON(geojson).getBounds();
             if (bounds.isValid()) {
                 this.map.fitBounds(bounds);
             } else {
                 console.warn("Invalid bounds for shapefile (empty or malformed).");
             }
         }
-    });
-
-shpfile.once("error", (error) => {
-    console.error("Error loading shapefile:", error);
-    if (error.message) {
-        console.error("Error message:", error.message);
+    } catch (error) {
+        console.error("Error loading or parsing shapefile:", error);
+        console.error("Stack trace:", error.stack);
     }
-});
-} catch (error) {
-    console.error("Error loading or parsing shapefile:", error);
-}     
-	    		console.log("shapefile data added to map");
-			this.dispatchEvent(new CustomEvent(
-				CUSTOM_EVENT_INIT, {detail: this.map}
-			));
- }
+
+    console.log("shapefile data added to map");
+    this.dispatchEvent(new CustomEvent(
+        CUSTOM_EVENT_INIT, { detail: this.map }
+    ));
+}
+
 
   generatePopupContent(properties) {
       let content = '';
