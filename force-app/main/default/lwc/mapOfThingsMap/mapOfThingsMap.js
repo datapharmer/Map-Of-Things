@@ -56,7 +56,7 @@ export default class MapOfThingsMap extends LightningElement {
     async connectedCallback(){
 		console.log("starting async for shapedata load");    	
 		console.log("Fetch shapedata");
-		var shapedata = await fetch(SCHOOLDISTRICTS)
+		const shapedata = await fetch(SCHOOLDISTRICTS)
 			.then(response => {
 	    			if (!response.ok) {
 	      				throw new Error('Network response for SCHOOLDISTRICTS fetch was not ok');
@@ -114,13 +114,13 @@ export default class MapOfThingsMap extends LightningElement {
 	console.log("shpfile: " + LEAFLET_JS + SHPFILE_JS_URL);
 	console.log("shp url: " + LEAFLET_JS + SHP_JS_URL);
         try {
-            var response = await fetch(SCHOOLDISTRICTS);
+            const response = await fetch(SCHOOLDISTRICTS);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            var buffer = await response.arrayBuffer();// changed to arrayBuffer
+            const buffer = await response.arrayBuffer();// changed to arrayBuffer
             try {
-                var shpfile = new L.Shapefile(buffer, {
+                const shpfile = new L.Shapefile(buffer, {
                     onEachFeature: (feature, layer) => {
                         if (feature.properties) {
                             layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
@@ -131,7 +131,7 @@ export default class MapOfThingsMap extends LightningElement {
                 shpfile.once("data:loaded", () => {
                     console.log("Shapefile data loaded!");
                     if (this.autoFitBounds) {
-                        var bounds = shpfile.getBounds();
+                        const bounds = shpfile.getBounds();
                         if (bounds.isValid()) {
                             this.map.fitBounds(bounds);
                         } else {
