@@ -1,7 +1,7 @@
 import { LightningElement, api } from 'lwc';
 import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
-import SCHOOLDISTRICTS from'@salesforce/resourceUrl/schooldistricts';
+import SCHOOLDISTRICTS from '@salesforce/resourceUrl/schooldistricts';
 
 const LEAFLET_CSS_URL = '/leaflet.css';
 const LEAFLET_JS_URL = '/leaflet.js';
@@ -80,6 +80,7 @@ export default class MapOfThingsMap extends LightningElement {
 	        ])
 		.then(() => {
 			console.log("promises loaded");
+			this.drawMap(SCHOOLDISTRICTS);
 		})
 		.catch(function(e) {
 	   	    console.log('Error loading promise');
@@ -92,13 +93,14 @@ export default class MapOfThingsMap extends LightningElement {
 		console.log(error);
 		console.log(error.message);
   	   }
-
-	    this.drawMap(SCHOOLDISTRICTS);
     }
 	
      async drawMap(shapedata){
         const container = this.template.querySelector(MAP_CONTAINER);
-        console.log("container defined: " + container);
+		   if (!container) {
+				console.error("Map container not found!");
+				return; // Important: Exit if container is not available
+			}
 	this.map = L.map(container, { 
             zoomControl: true, tap:false   
         }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);  
@@ -119,7 +121,7 @@ export default class MapOfThingsMap extends LightningElement {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 	    console.log("setting buffer");
-            const buffer = await response.arrayBuffer();// changed to arrayBuffer
+            const buffer = await response.arrayBuffer();
             try {
 		console.log("defining shpfile");
                 const shpfile = new L.Shapefile(buffer, {
@@ -130,7 +132,7 @@ export default class MapOfThingsMap extends LightningElement {
                     }
                 });
 
-                shpfile.once("data:loaded", () => {
+                shpfile.on("data:loaded", () => {
                     console.log("Shapefile data loaded!");
                     if (this.autoFitBounds) {
                         const bounds = shpfile.getBounds();
@@ -142,15 +144,15 @@ export default class MapOfThingsMap extends LightningElement {
                     }
                 });
 
-                shpfile.once("error", (error) => { // Handle errors during shapefile loading
+                shpfile.on("error", (error) => { 
                     console.error("Error loading shapefile:", error);
                 });
 
             } catch (shpError) {
-                console.error("Error parsing shapefile:", shpError); // Catch parsing errors
+                console.error("Error parsing shapefile:", shpError); 
             }
         } catch (error) {
-            console.error("Error loading or parsing shapefile:", error);
+            console.error("Error fetching shapefile:", error);
         }	     
 		console.log("adding shapedata to map via shpfile");
 	     	shpfile.addTo(this.map);
