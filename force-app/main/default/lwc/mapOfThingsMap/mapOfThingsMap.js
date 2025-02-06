@@ -151,7 +151,8 @@ export default class MapOfThingsMap extends LightningElement {
             console.error("Error loading or parsing shapefile:", error);
         }	     
 		console.log("adding shapedata to map via shpfile");
-	     	shpfile.addTo(this.map);
+	     	//shpfile.addTo(this.map);
+	     	shpfile.appendChild(this.map);
 	    	console.log("shapefile data added to map");
 		this.dispatchEvent(new CustomEvent(
 			CUSTOM_EVENT_INIT, {detail: this.map}
