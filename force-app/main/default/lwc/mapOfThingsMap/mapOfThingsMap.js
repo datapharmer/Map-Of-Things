@@ -95,10 +95,10 @@ export default class MapOfThingsMap extends LightningElement {
 		console.log(error.message);
   	   }
 
-	    this.drawMap(SCHOOLDISTRICTS);
+	    this.drawMap();
     }
 	
-     async drawMap(shapedata){
+     async drawMap(){
         const container = this.template.querySelector(MAP_CONTAINER);
         console.log("container defined: " + container);
 	this.map = L.map(container, { 
@@ -110,11 +110,12 @@ export default class MapOfThingsMap extends LightningElement {
             attribution: this.tileServerAttribution,
             unloadInvisibleTiles: true
         }).addTo(this.map);
-	    				console.log("shapefile with school districts details: " + shapedata);
+	    console.log("shapefile with school districts details: " + SCHOOLDISTRICTS);
 	    //todo: check into rangeparent issue in firefox related to Component.index():'Invalid redundant use of component.index().
 	console.log("catiline: " + LEAFLET_JS + CATILINE_JS_URL);
 	console.log("shpfile: " + LEAFLET_JS + SHPFILE_JS_URL);
 	console.log("shp url: " + LEAFLET_JS + SHP_JS_URL);
+	     /*
         try {
             const response = await fetch(SCHOOLDISTRICTS);
             if (!response.ok) {
@@ -124,7 +125,8 @@ export default class MapOfThingsMap extends LightningElement {
             const buffer = await response.arrayBuffer();// changed to arrayBuffer
             try {
 		console.log("get shpfile via arraybuffer");
-                const shpfile = new L.Shapefile(buffer, {
+  */
+                const shpfile = new L.Shapefile(SCHOOLDISTRICTS, {
                     onEachFeature: (feature, layer) => {
                         if (feature.properties) {
                             layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
