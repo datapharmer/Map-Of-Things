@@ -117,19 +117,13 @@ export default class MapOfThingsMap extends LightningElement {
 	console.log("shp url: " + LEAFLET_JS + SHP_JS_URL);
 	     
 try {
-    const response = await fetch(SCHOOLDISTRICTS);
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const arrayBuffer = await response.arrayBuffer(); // Ensure we get the data as an ArrayBuffer
-    console.log("Shapefile fetched successfully!");
-    const shpfile = new L.Shapefile(arrayBuffer, {
-        onEachFeature: (feature, layer) => {
-            if (feature.properties) {
-                layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
-            }
+    const shpfile = new L.Shapefile(SCHOOLDISTRICTS, {
+    onEachFeature: (feature, layer) => {
+        if (feature.properties) {
+            layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
         }
-    });
+    }
+});
     shpfile.addTo(this.map);
 
     shpfile.once("data:loaded", () => {
@@ -144,9 +138,12 @@ try {
         }
     });
 
-    shpfile.once("error", (error) => {
-        console.error("Error loading shapefile:", error);
-    });
+shpfile.once("error", (error) => {
+    console.error("Error loading shapefile:", error);
+    if (error.message) {
+        console.error("Error message:", error.message);
+    }
+});
 } catch (error) {
     console.error("Error loading or parsing shapefile:", error);
 }     
