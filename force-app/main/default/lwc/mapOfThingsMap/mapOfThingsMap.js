@@ -56,7 +56,7 @@ export default class MapOfThingsMap extends LightningElement {
     async connectedCallback(){
 		console.log("starting async for shapedata load");    	
 		console.log("Fetch shapedata");
-		const shapedata = await fetch(SCHOOLDISTRICTS)
+		var shapedata = await fetch(SCHOOLDISTRICTS)
 			.then(response => {
 	    			if (!response.ok) {
 	      				throw new Error('Network response for SCHOOLDISTRICTS fetch was not ok');
@@ -114,13 +114,13 @@ export default class MapOfThingsMap extends LightningElement {
 	console.log("shpfile: " + LEAFLET_JS + SHPFILE_JS_URL);
 	console.log("shp url: " + LEAFLET_JS + SHP_JS_URL);
         try {
-            const response = await fetch(SCHOOLDISTRICTS);
+            var response = await fetch(SCHOOLDISTRICTS);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            const buffer = await response.arrayBuffer();// changed to arrayBuffer
+            var buffer = await response.arrayBuffer();// changed to arrayBuffer
             try {
-                const shpfile = new L.Shapefile(buffer, {
+                var shpfile = new L.Shapefile(buffer, {
                     onEachFeature: (feature, layer) => {
                         if (feature.properties) {
                             layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
@@ -128,12 +128,10 @@ export default class MapOfThingsMap extends LightningElement {
                     }
                 });
 
-                shpfile.addTo(this.map);
-
                 shpfile.once("data:loaded", () => {
                     console.log("Shapefile data loaded!");
                     if (this.autoFitBounds) {
-                        const bounds = shpfile.getBounds();
+                        var bounds = shpfile.getBounds();
                         if (bounds.isValid()) {
                             this.map.fitBounds(bounds);
                         } else {
@@ -153,10 +151,11 @@ export default class MapOfThingsMap extends LightningElement {
             console.error("Error loading or parsing shapefile:", error);
         }	     
 		console.log("adding shapedata to map via shpfile");
-	    		console.log("shapefile data added to map");
-			this.dispatchEvent(new CustomEvent(
-				CUSTOM_EVENT_INIT, {detail: this.map}
-			));
+	     	shpfile.addTo(this.map);
+	    	console.log("shapefile data added to map");
+		this.dispatchEvent(new CustomEvent(
+			CUSTOM_EVENT_INIT, {detail: this.map}
+		));
  }
 
   generatePopupContent(properties) {
