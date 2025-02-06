@@ -115,8 +115,8 @@ export default class MapOfThingsMap extends LightningElement {
 	console.log("catiline: " + LEAFLET_JS + CATILINE_JS_URL);
 	console.log("shpfile: " + LEAFLET_JS + SHPFILE_JS_URL);
 	console.log("shp url: " + LEAFLET_JS + SHP_JS_URL);
-	     /*
-        try {
+	     
+        try { /*
             const response = await fetch(SCHOOLDISTRICTS);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
