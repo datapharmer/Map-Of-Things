@@ -156,10 +156,10 @@ export default class MapOfThingsMap extends LightningElement {
                 console.error("Error parsing shapefile:", shpError); // Catch parsing errors
 		return;
             }
-        } catch (error) {
+        /*} catch (error) {
             console.error("Error loading or parsing shapefile:", error);
 	    return;
-        }	     
+        }	*/     
 	    		console.log("shapefile data added to map");
 			this.dispatchEvent(new CustomEvent(
 				CUSTOM_EVENT_INIT, {detail: this.map}
