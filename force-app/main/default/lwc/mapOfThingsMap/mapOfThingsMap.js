@@ -185,13 +185,15 @@ async renderShapefile() {
     }
 }
 
-    generatePopupContent(properties) {
-        let content = '';
-        for (const key in properties) {
-            if (properties.hasOwnProperty(key)) {
-                content += `${key}: ${properties[key]}<br>`;
-            }
+generatePopupContent(properties) {
+    const content = document.createElement('div');
+    for (const key in properties) {
+        if (properties.hasOwnProperty(key)) {
+            const row = document.createElement('div');
+            row.textContent = `${key}: ${properties[key]}`;
+            content.appendChild(row);
         }
-        return content;
     }
+    return content.innerHTML;
+}
 }
