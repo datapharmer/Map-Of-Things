@@ -103,12 +103,10 @@ export default class MapOfThingsMap extends LightningElement {
 	
 async drawMap() {
     const container = this.template.querySelector(MAP_CONTAINER);
-    console.log("container defined: " + container);
     this.map = L.map(container, {
         zoomControl: true,
         tap: false
     }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);
-    console.log("mapping set");
 
     L.tileLayer(this.tileServerUrl, {
         minZoom: MIN_ZOOM,
@@ -116,37 +114,24 @@ async drawMap() {
         unloadInvisibleTiles: true
     }).addTo(this.map);
 
-    console.log("shapefile with school districts details: " + SCHOOLDISTRICTS);
-    console.log("SHP File URL: " + SHP_URL);
-    console.log("DBF File URL: " + DBF_URL);
-    console.log("DBF File URL: " + DBF_URL);
-	
     try {
-        const geojson = await fetch(SCHOOLDISTRICTS); // Load shapefile from .zip
-        console.log("Shapefile fetched and parsed successfully!");
-
-        L.Shapefile(geojson, {
+        // Pass the entire zip file URL to the shapefile loader
+        L.shapefile(SCHOOLDISTRICTS, {
             onEachFeature: (feature, layer) => {
                 if (feature.properties) {
-                    layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
+                    layer.bindPopup(Object.keys(feature.properties).map(function(k) {
+                        return k + ": " + feature.properties[k];
+                    }).join("<br />"), {
+                        maxHeight: 200
+                    });
                 }
             }
         }).addTo(this.map);
-
-        if (this.autoFitBounds) {
-            const bounds = L.Shapefile(geojson).getBounds();
-            if (bounds.isValid()) {
-                this.map.fitBounds(bounds);
-            } else {
-                console.warn("Invalid bounds for shapefile (empty or malformed).");
-            }
-        }
     } catch (error) {
         console.error("Error loading or parsing shapefile:", error);
         console.error("Stack trace:", error.stack);
     }
 
-    console.log("shapefile data added to map");
     this.dispatchEvent(new CustomEvent(
         CUSTOM_EVENT_INIT, { detail: this.map }
     ));
