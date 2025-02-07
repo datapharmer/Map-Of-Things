@@ -4,7 +4,7 @@
 L.Shapefile = L.GeoJSON.extend({
     options: {
         importUrl: 'shpworker',
-        isArrayBuffer: false
+        isArrayBuffer: true
     },
 
      initialize: function(file, options) {
