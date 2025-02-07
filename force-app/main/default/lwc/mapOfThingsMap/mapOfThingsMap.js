@@ -51,9 +51,11 @@ export default class MapOfThingsMap extends LightningElement {
         return [];
     }
 
-    renderedCallback() {
+renderedCallback() {
+    if (this.template.querySelector(MAP_CONTAINER)) {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
+}
 
     async connectedCallback() {
         try {
