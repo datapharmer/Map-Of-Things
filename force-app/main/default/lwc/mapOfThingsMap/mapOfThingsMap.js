@@ -13,6 +13,9 @@ const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.inner-map-container';
 const CUSTOM_EVENT_INIT = 'init';
+const SHP_URL = '/schooldistricts.shp';
+const DBF_URL = '/schooldistricts.dbf';
+const PRJ_URL = '/schooldistricts.prj';
 
 export default class MapOfThingsMap extends LightningElement {
 	
@@ -114,7 +117,10 @@ async drawMap() {
     }).addTo(this.map);
 
     console.log("shapefile with school districts details: " + SCHOOLDISTRICTS);
-
+    console.log("SHP File URL: " + SHP_URL);
+    console.log("DBF File URL: " + DBF_URL);
+    console.log("DBF File URL: " + DBF_URL);
+	
     try {
         const geojson = await shp(SCHOOLDISTRICTS); // Load shapefile from .zip
         console.log("Shapefile fetched and parsed successfully!");
