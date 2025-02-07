@@ -17,40 +17,44 @@ const CUSTOM_EVENT_INIT = 'init';
 export default class MapOfThingsMap extends LightningElement {
     map;
     _markers = [];
-	
+
     @api tileServerUrl;
     @api tileServerAttribution;
     @api mapSizeY;
     @api mapDefaultPosition;
     @api mapDefaultZoomLevel;
     @api autoFitBounds;
-	    @api
-    get markers(){
+
+    @api
+    get markers() {
         return this._markers;
     }
     set markers(newMarkers) {
         if (newMarkers && newMarkers.length >= 0) {
             this._markers = [...newMarkers];
             if (this.map) {
-                this.renderMarkers();
+                this.renderMarkers(); // Render markers whenever the markers array is updated.
             }
         }
-    }     
+    }
 
-    get markersExist(){
+    get markersExist() {
         return this.markers && this.markers.length > 0;
     }
-    get bounds(){
-        if (this.markersExist){
+
+    get bounds() {
+        if (this.markersExist) {
             return this.markers.map(marker => {
                 return [marker.lat, marker.lng];
             });
         }
         return [];
     }
+
     renderedCallback() {
-        this.template.querySelector('div.inner-map-container').style.height = this.mapSizeY;
+        this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
+
     async connectedCallback() {
         try {
             // Load external JS and CSS libraries
@@ -69,19 +73,56 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
     async drawMap() {
-        //const container = this.template.querySelector('div.inner-map-container');
-		const container = this.template.querySelector(MAP_CONTAINER);
+        const container = this.template.querySelector(MAP_CONTAINER);
         this.map = L.map(container, {
             zoomControl: true,
             tap: false
         }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);
-		console.log("mapping set");
+
+        // Add tile layer
         L.tileLayer(this.tileServerUrl, {
             minZoom: MIN_ZOOM,
             attribution: this.tileServerAttribution,
             unloadInvisibleTiles: true
         }).addTo(this.map);
 
+        // Render markers if they exist
+        if (this.markersExist) {
+            this.renderMarkers();
+        }
+
+        // Render shapefile
+        await this.renderShapefile();
+
+        // Dispatch custom event to notify the map is initialized
+        this.dispatchEvent(new CustomEvent(CUSTOM_EVENT_INIT, { detail: this.map }));
+    }
+
+    renderMarkers() {
+        // Clear existing markers
+        if (this.map && this.markerLayer) {
+            this.map.removeLayer(this.markerLayer);
+        }
+
+        // Add new markers to the map
+        this.markerLayer = L.layerGroup(
+            this.markers.map(marker => {
+                return L.marker([marker.lat, marker.lng], {
+                    title: marker.title || '',
+                    rotationAngle: marker.rotationAngle || 0 // Optional: if using the marker rotation addon
+                }).bindPopup(marker.popupContent || '');
+            })
+        );
+
+        this.markerLayer.addTo(this.map);
+
+        // Auto fit bounds if enabled
+        if (this.autoFitBounds && this.markersExist) {
+            this.map.flyToBounds(this.bounds, { padding: FIT_BOUNDS_PADDING });
+        }
+    }
+
+    async renderShapefile() {
         try {
             const shapefileUrl = SCHOOLDISTRICTS_ZIP;
 
@@ -95,7 +136,7 @@ export default class MapOfThingsMap extends LightningElement {
             const geojson = await shp(arrayBuffer); // Use `shp.js` to parse the zip file into GeoJSON
 
             // Add GeoJSON to the map
-            L.geoJSON(geojson, {
+            const geoJsonLayer = L.geoJSON(geojson, {
                 onEachFeature: (feature, layer) => {
                     if (feature.properties) {
                         layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
@@ -105,7 +146,6 @@ export default class MapOfThingsMap extends LightningElement {
 
             // Fit map bounds to GeoJSON
             if (this.autoFitBounds) {
-                const geoJsonLayer = L.geoJSON(geojson);
                 const bounds = geoJsonLayer.getBounds();
                 if (bounds.isValid()) {
                     this.map.fitBounds(bounds);
