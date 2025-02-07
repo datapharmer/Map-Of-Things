@@ -98,29 +98,38 @@ export default class MapOfThingsMap extends LightningElement {
         this.dispatchEvent(new CustomEvent(CUSTOM_EVENT_INIT, { detail: this.map }));
     }
 
-    renderMarkers() {
-        // Clear existing markers
-        if (this.map && this.markerLayer) {
-            this.map.removeLayer(this.markerLayer);
-        }
-
-        // Add new markers to the map
-        this.markerLayer = L.layerGroup(
-            this.markers.map(marker => {
-                return L.marker([marker.lat, marker.lng], {
-                    title: marker.title || '',
-                    rotationAngle: marker.rotationAngle || 0 // Optional: if using the marker rotation addon
-                }).bindPopup(marker.popupContent || '');
-            })
-        );
-
-        this.markerLayer.addTo(this.map);
-
-        // Auto fit bounds if enabled
-        if (this.autoFitBounds && this.markersExist) {
-            this.map.flyToBounds(this.bounds, { padding: FIT_BOUNDS_PADDING });
-        }
+renderMarkers() {
+    // Clear existing markers
+    if (this.markerLayer) {
+        this.map.removeLayer(this.markerLayer);
     }
+
+    // Define custom icon for the markers
+    const customIcon = L.icon({
+        iconUrl: 'https://www.trustindiana.in.gov/wp-content/uploads/2018/06/School-Icon-300x300@2x.png', // Custom icon URL
+        iconSize: [50, 50], // Adjust the size of the icon as needed
+        iconAnchor: [25, 50] // Anchor point to properly position the icon on the map
+    });
+
+    // Create a layer group for the markers
+    this.markerLayer = L.layerGroup(
+        this.markers.map(marker => {
+            return L.marker([marker.lat, marker.lng], {
+                icon: customIcon, // Use the custom icon
+                title: marker.title || '',
+                rotationAngle: marker.rotationAngle || 0 // Optional: if using the marker rotation addon
+            }).bindPopup(marker.popupContent || '');
+        })
+    );
+
+    // Add the marker layer to the map
+    this.markerLayer.addTo(this.map);
+
+    // Auto fit bounds if enabled
+    if (this.autoFitBounds && this.markersExist) {
+        this.map.flyToBounds(this.bounds, { padding: FIT_BOUNDS_PADDING });
+    }
+}
 
     async renderShapefile() {
         try {
