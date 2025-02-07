@@ -122,7 +122,7 @@ async drawMap() {
     console.log("DBF File URL: " + DBF_URL);
 	
     try {
-        const geojson = await shp(SCHOOLDISTRICTS); // Load shapefile from .zip
+        const geojson = await fetch(SCHOOLDISTRICTS); // Load shapefile from .zip
         console.log("Shapefile fetched and parsed successfully!");
 
         L.Shapefile(geojson, {
