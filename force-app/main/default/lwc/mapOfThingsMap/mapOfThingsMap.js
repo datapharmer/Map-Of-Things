@@ -125,7 +125,7 @@ async drawMap() {
         const geojson = await shp(SCHOOLDISTRICTS); // Load shapefile from .zip
         console.log("Shapefile fetched and parsed successfully!");
 
-        L.geoJSON(geojson, {
+        L.Shapefile(geojson, {
             onEachFeature: (feature, layer) => {
                 if (feature.properties) {
                     layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
@@ -134,7 +134,7 @@ async drawMap() {
         }).addTo(this.map);
 
         if (this.autoFitBounds) {
-            const bounds = L.geoJSON(geojson).getBounds();
+            const bounds = L.Shapefile(geojson).getBounds();
             if (bounds.isValid()) {
                 this.map.fitBounds(bounds);
             } else {
