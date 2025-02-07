@@ -33,7 +33,7 @@ export default class MapOfThingsMap extends LightningElement {
         if (newMarkers && newMarkers.length >= 0) {
             this._markers = [...newMarkers];
             if (this.map) {
-                this.renderMarkers(); // Render markers whenever the markers array is updated.
+                //this.renderMarkers(); // Render markers whenever the markers array is updated.
             }
         }
     }
