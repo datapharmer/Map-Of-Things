@@ -108,19 +108,28 @@ renderMarkers() {
 
     // Define custom icon for the markers
     const customIcon = L.icon({
-        iconUrl: 'https://www.trustindiana.in.gov/wp-content/uploads/2018/06/School-Icon-300x300@2x.png', // Custom icon URL
-        iconSize: [50, 50], // Adjust the size of the icon as needed
-        iconAnchor: [25, 50] // Anchor point to properly position the icon on the map
+        iconUrl: 'https://www.trustindiana.in.gov/wp-content/uploads/2018/06/School-Icon-300x300@2x.png',
+        iconSize: [50, 50],
+        iconAnchor: [25, 50]
     });
 
     // Create a layer group for the markers
     this.markerLayer = L.layerGroup(
         this.markers.map(marker => {
-            return L.marker([marker.lat, marker.lng], {
-                icon: customIcon, // Use the custom icon
+            const leafletMarker = L.marker([marker.lat, marker.lng], {
+                icon: customIcon,
                 title: marker.title || '',
-                rotationAngle: marker.rotationAngle || 0 // Optional: if using the marker rotation addon
-            }).bindPopup(marker.popupContent || '');
+                rotationAngle: marker.rotationAngle || 0
+            });
+
+            // Create popup content using sanitized DOM methods
+            if (marker.popupContent) {
+                const popupContent = document.createElement('div');
+                popupContent.innerHTML = marker.popupContent;
+                leafletMarker.bindPopup(popupContent);
+            }
+
+            return leafletMarker;
         })
     );
 
@@ -132,7 +141,6 @@ renderMarkers() {
         this.map.flyToBounds(this.bounds, { padding: FIT_BOUNDS_PADDING });
     }
 }
-
 async renderShapefile() {
     try {
         const shapefileUrl = SCHOOLDISTRICTS_ZIP;
