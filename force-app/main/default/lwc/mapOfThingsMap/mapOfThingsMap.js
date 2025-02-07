@@ -28,12 +28,14 @@ export default class MapOfThingsMap extends LightningElement {
     get markers(){
         return this._markers;
     }
-    set markers(newMarkers){
-        if (newMarkers && newMarkers.length >= 0){
+    set markers(newMarkers) {
+        if (newMarkers && newMarkers.length >= 0) {
             this._markers = [...newMarkers];
-            if (this.autoFitBounds) this.fitBounds();
+            if (this.map) {
+                this.renderMarkers();
+            }
         }
-    }    
+    }     
 
     get markersExist(){
         return this.markers && this.markers.length > 0;
