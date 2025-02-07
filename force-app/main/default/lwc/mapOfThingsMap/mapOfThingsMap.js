@@ -131,39 +131,57 @@ renderMarkers() {
     }
 }
 
-    async renderShapefile() {
-        try {
-            const shapefileUrl = SCHOOLDISTRICTS_ZIP;
+async renderShapefile() {
+    try {
+        const shapefileUrl = SCHOOLDISTRICTS_ZIP;
 
-            // Fetch and parse the Shapefile from the .zip file
-            const response = await fetch(shapefileUrl);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
-            }
-
-            const arrayBuffer = await response.arrayBuffer();
-            const geojson = await shp(arrayBuffer); // Use `shp.js` to parse the zip file into GeoJSON
-
-            // Add GeoJSON to the map
-            const geoJsonLayer = L.geoJSON(geojson, {
-                onEachFeature: (feature, layer) => {
-                    if (feature.properties) {
-                        layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
-                    }
-                }
-            }).addTo(this.map);
-
-            // Fit map bounds to GeoJSON
-            if (this.autoFitBounds) {
-                const bounds = geoJsonLayer.getBounds();
-                if (bounds.isValid()) {
-                    this.map.fitBounds(bounds);
-                }
-            }
-        } catch (error) {
-            console.error('Error loading or parsing shapefile:', error);
+        // Fetch and parse the Shapefile from the .zip file
+        const response = await fetch(shapefileUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
         }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const geojson = await shp(arrayBuffer); // Use `shp.js` to parse the zip file into GeoJSON
+
+        // Function to generate a random color
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        // Add GeoJSON to the map with styles
+        const geoJsonLayer = L.geoJSON(geojson, {
+            style: function(feature) {
+                return {
+                    color: getRandomColor(), // Assign a random color to each feature
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.5 // Adjust fill opacity for visibility
+                };
+            },
+            onEachFeature: (feature, layer) => {
+                if (feature.properties) {
+                    layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
+                }
+            }
+        }).addTo(this.map);
+
+        // Fit map bounds to GeoJSON
+        if (this.autoFitBounds) {
+            const bounds = geoJsonLayer.getBounds();
+            if (bounds.isValid()) {
+                this.map.fitBounds(bounds);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading or parsing shapefile:', error);
     }
+}
 
     generatePopupContent(properties) {
         let content = '';
