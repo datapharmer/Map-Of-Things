@@ -9,7 +9,6 @@ const LEAFLETADDON_JS_URL = '/leafletjs_marker_rotate_addon.js';
 const SHPFILE_JS_URL = '/leaflet.shpfile.js';
 const SHP_JS_URL = '/shp.js';
 const CATILINE_JS_URL = '/catiline.js';
-const SHP_JS_URL = '/shp.js';
 const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.inner-map-container';
