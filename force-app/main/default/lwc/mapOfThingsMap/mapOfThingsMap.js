@@ -33,20 +33,14 @@ export default class MapOfThingsMap extends LightningElement {
         if (newMarkers && newMarkers.length >= 0) {
             this._markers = [...newMarkers];
             if (this.map) {
-                // No longer rendering markers
+                // Update the map when markers change
+                this.renderShapefile();
             }
         }
     }
 
     get markersExist() {
         return this.markers && this.markers.length > 0;
-    }
-
-    get bounds() {
-        if (this.markersExist) {
-            return this.markers.map(marker => [marker.lat, marker.lng]);
-        }
-        return [];
     }
 
     renderedCallback() {
@@ -84,7 +78,7 @@ export default class MapOfThingsMap extends LightningElement {
             unloadInvisibleTiles: true
         }).addTo(this.map);
 
-        // Render shapefile (filtered to only show shapes containing markers)
+        // Render shapefile (filtered by markers)
         await this.renderShapefile();
 
         // Dispatch custom event to notify the map is initialized
@@ -102,28 +96,24 @@ export default class MapOfThingsMap extends LightningElement {
             }
 
             const arrayBuffer = await response.arrayBuffer();
-            const geojson = await shp(arrayBuffer); // Convert shapefile to GeoJSON
+            const geojson = await shp(arrayBuffer); // Use `shp.js` to parse the zip file into GeoJSON
 
-            // Filter shapes to only include those containing at least one marker
-            const filteredFeatures = geojson.features.filter(feature => 
-                this.doesShapeContainMarker(feature)
-            );
+            // Filter GeoJSON features to include only those containing markers
+            const filteredGeojson = this.filterGeojsonFeaturesByMarkers(geojson);
 
-            if (filteredFeatures.length === 0) {
-                console.warn('No shapes contain markers.');
+            // Clear any previous layers
+            if (this.geoJsonLayer) {
+                this.map.removeLayer(this.geoJsonLayer);
             }
 
-            // Create a new GeoJSON object with only the filtered features
-            const filteredGeoJson = { type: "FeatureCollection", features: filteredFeatures };
-
-            // Add filtered GeoJSON to the map
-            const geoJsonLayer = L.geoJSON(filteredGeoJson, {
+            // Add filtered GeoJSON to the map with styles
+            this.geoJsonLayer = L.geoJSON(filteredGeojson, {
                 style: function(feature) {
                     return {
                         color: '#CC5500',
                         weight: 2,
                         opacity: 1,
-                        fillOpacity: 0.5
+                        fillOpacity: 0.5 // Adjust fill opacity for visibility
                     };
                 },
                 onEachFeature: (feature, layer) => {
@@ -133,58 +123,33 @@ export default class MapOfThingsMap extends LightningElement {
                 }
             }).addTo(this.map);
 
-            // Fit map bounds to filtered GeoJSON
-            if (this.autoFitBounds && geoJsonLayer.getBounds().isValid()) {
-                this.map.fitBounds(geoJsonLayer.getBounds());
+            // Fit map bounds to the filtered GeoJSON
+            if (this.autoFitBounds && this.geoJsonLayer.getBounds().isValid()) {
+                this.map.fitBounds(this.geoJsonLayer.getBounds());
             }
         } catch (error) {
             console.error('Error loading or parsing shapefile:', error);
         }
     }
 
-    /**
-     * Determines if a shape contains at least one marker
-     * @param {Object} feature - GeoJSON feature
-     * @returns {boolean} - True if at least one marker is inside the shape
-     */
-    doesShapeContainMarker(feature) {
-        if (!this.markersExist || !feature.geometry) {
-            return false;
+    filterGeojsonFeaturesByMarkers(geojson) {
+        if (!this.markersExist) {
+            return { type: 'FeatureCollection', features: [] };
         }
 
-        const shapeCoordinates = feature.geometry.coordinates;
+        const markersLatLng = this.markers.map(marker => L.latLng(marker.lat, marker.lng));
 
-        // Convert GeoJSON coordinates to a Leaflet Polygon
-        let shape;
-        if (feature.geometry.type === "Polygon") {
-            shape = L.polygon(shapeCoordinates);
-        } else if (feature.geometry.type === "MultiPolygon") {
-            shape = L.polygon(shapeCoordinates.flat());
-        } else {
-            return false;
-        }
+        const filteredFeatures = geojson.features.filter(feature => {
+            const shapeBounds = L.geoJSON(feature).getBounds();
 
-        // Ensure shape is properly initialized
-        if (!shape) return false;
+            // Check if any marker is within the bounds of the current shape
+            return markersLatLng.some(markerLatLng => shapeBounds.contains(markerLatLng));
+        });
 
-        // Check if at least one marker is inside the shape
-        return this.markers.some(marker => 
-            this.isPointInsidePolygon([marker.lat, marker.lng], shape)
-        );
-    }
-
-    /**
-     * Checks if a point is inside a Leaflet Polygon
-     * @param {Array} point - [lat, lng] of the marker
-     * @param {L.Polygon} polygon - Leaflet Polygon object
-     * @returns {boolean} - True if the point is inside the polygon
-     */
-    isPointInsidePolygon(point, polygon) {
-        // Convert point to Leaflet LatLng
-        const latLng = L.latLng(point);
-
-        // Check if the point is inside the polygon
-        return polygon.getBounds().contains(latLng) && polygon.getLayers().some(layer => layer instanceof L.Polygon && layer.contains(latLng));
+        return {
+            type: 'FeatureCollection',
+            features: filteredFeatures
+        };
     }
 
     generatePopupContent(properties) {
