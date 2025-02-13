@@ -134,93 +134,52 @@ renderMarkers() {
 async renderShapefile() {
     try {
         const shapefileUrl = SCHOOLDISTRICTS_ZIP;
+
+        // Fetch and parse the shapefile
         const response = await fetch(shapefileUrl);
         if (!response.ok) {
             throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
         }
-
         const arrayBuffer = await response.arrayBuffer();
-        const geojson = await shp(arrayBuffer);
+        const geojson = await shp(arrayBuffer); // Parse the shapefile into GeoJSON
 
-        // Create the GeoJSON layer with a filter function
-        const geoJsonLayer = L.geoJSON(geojson, {
-            style: function(feature) {
-                return {
-                    color: '#CC5500',
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.5
-                };
-            },
+        // Function to check if a marker is inside a shape
+        const isMarkerInsideShape = (shapeBounds) => {
+            return this.markers.some((marker) => {
+                const latLng = L.latLng(marker.lat, marker.lng);
+                return shapeBounds.contains(latLng);
+            });
+        };
+
+        // Add filtered shapes to the map
+        const filteredGeoJsonLayer = L.geoJSON(geojson, {
+            style: (feature) => ({
+                color: '#CC5500',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.5,
+            }),
             filter: (feature) => {
-                // Convert feature to a Leaflet polygon/multipolygon
-                const featureLayer = L.geoJSON(feature);
-                const featureBounds = featureLayer.getBounds();
-                
-                // Check if any markers are within this feature's bounds
-                return this.markers.some(marker => {
-                    const markerLatLng = L.latLng(marker.lat, marker.lng);
-                    
-                    // First do a quick bounds check
-                    if (!featureBounds.contains(markerLatLng)) {
-                        return false;
-                    }
-                    
-                    // Then do precise polygon containment check
-                    return featureLayer.getLayers().some(layer => {
-                        // For multipolygons, we need to check each polygon
-                        if (layer.feature.geometry.type === 'MultiPolygon') {
-                            return layer.feature.geometry.coordinates.some(polygon => {
-                                return this.isPointInPolygon(markerLatLng, polygon[0]);
-                            });
-                        }
-                        // For single polygons
-                        return this.isPointInPolygon(markerLatLng, 
-                            layer.feature.geometry.coordinates[0]);
-                    });
-                });
+                // Check if the shape contains any markers
+                const shapeBounds = L.geoJSON(feature).getBounds();
+                return isMarkerInsideShape(shapeBounds);
             },
             onEachFeature: (feature, layer) => {
                 if (feature.properties) {
-                    layer.bindPopup(this.generatePopupContent(feature.properties), 
-                        { maxHeight: 200 });
+                    layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
                 }
-            }
+            },
         }).addTo(this.map);
 
-        // Fit map bounds to GeoJSON if needed
-        if (this.autoFitBounds) {
-            const bounds = geoJsonLayer.getBounds();
-            if (bounds.isValid()) {
-                this.map.fitBounds(bounds);
-            }
+        // Fit map bounds to the filtered GeoJSON layer
+        if (this.autoFitBounds && filteredGeoJsonLayer.getBounds().isValid()) {
+            this.map.fitBounds(filteredGeoJsonLayer.getBounds());
         }
     } catch (error) {
         console.error('Error loading or parsing shapefile:', error);
     }
 }
 
-// Add helper method for point-in-polygon check
-isPointInPolygon(point, polygon) {
-    // Ray casting algorithm
-    let inside = false;
-    const x = point.lng;
-    const y = point.lat;
-    
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-        const xi = polygon[i][0];
-        const yi = polygon[i][1];
-        const xj = polygon[j][0];
-        const yj = polygon[j][1];
-        
-        const intersect = ((yi > y) !== (yj > y))
-            && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-            
-        if (intersect) inside = !inside;
-    }
-    
-    return inside;
-}
 
     generatePopupContent(properties) {
         let content = '';
