@@ -134,40 +134,47 @@ renderMarkers() {
 async renderShapefile() {
     try {
         const shapefileUrl = SCHOOLDISTRICTS_ZIP;
-
-        // Fetch and parse the Shapefile from the .zip file
         const response = await fetch(shapefileUrl);
         if (!response.ok) {
             throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
         }
 
         const arrayBuffer = await response.arrayBuffer();
-        const geojson = await shp(arrayBuffer); // Use `shp.js` to parse the zip file into GeoJSON
+        const geojson = await shp(arrayBuffer);
 
-        // Function to generate a random color
-        function getRandomColor() {
-            const letters = '0123456789ABCDEF';
-            let color = '#';
-            for (let i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
-            }
-            return color;
-        }
+        // Create a function to check if a shape contains any markers
+        const shapeContainsMarkers = (shape) => {
+            if (!this.markers || this.markers.length === 0) return false;
+            
+            // Convert shape to Leaflet layer to use Leaflet's contains method
+            const layer = L.geoJSON(shape);
+            const bounds = layer.getBounds();
+            
+            // Check if any markers fall within this shape's bounds
+            return this.markers.some(marker => {
+                const point = L.latLng(marker.lat, marker.lng);
+                return bounds.contains(point);
+            });
+        };
 
-        // Add GeoJSON to the map with styles
+        // Add GeoJSON to the map with styles, but filter features first
         const geoJsonLayer = L.geoJSON(geojson, {
+            filter: (feature) => {
+                // Only include shapes that contain markers
+                return shapeContainsMarkers(feature);
+            },
             style: function(feature) {
                 return {
                     color: '#CC5500',
-                    //color: getRandomColor(), // Assign a random color to each feature
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.5 // Adjust fill opacity for visibility
+                    fillOpacity: 0.5
                 };
             },
             onEachFeature: (feature, layer) => {
                 if (feature.properties) {
-                    layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
+                    layer.bindPopup(this.generatePopupContent(feature.properties), 
+                        { maxHeight: 200 });
                 }
             }
         }).addTo(this.map);
@@ -183,6 +190,7 @@ async renderShapefile() {
         console.error('Error loading or parsing shapefile:', error);
     }
 }
+
 
     generatePopupContent(properties) {
         let content = '';
