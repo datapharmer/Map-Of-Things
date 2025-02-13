@@ -8,7 +8,7 @@ const LEAFLET_JS_URL = '/leaflet.js';
 const LEAFLETADDON_JS_URL = '/leafletjs_marker_rotate_addon.js';
 const SHPFILE_JS_URL = '/leaflet.shpfile.js';
 const SHP_JS_URL = '/shp.js';
-const CATILINE_JS_URL = '/catiline.js';
+const CATILINE_JS_URL = '/catiline.js';  // Make sure this path is correct
 const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.inner-map-container';
@@ -17,6 +17,7 @@ const CUSTOM_EVENT_INIT = 'init';
 export default class MapOfThingsMap extends LightningElement {
     map;
     _markers = [];
+    markerLayer; // Declare markerLayer here
 
     @api tileServerUrl;
     @api tileServerAttribution;
@@ -33,7 +34,9 @@ export default class MapOfThingsMap extends LightningElement {
         if (newMarkers && newMarkers.length >= 0) {
             this._markers = [...newMarkers];
             if (this.map) {
-                //this.renderMarkers(); // Render markers whenever the markers array is updated.
+                this.renderMarkers(); //  render markers when they are set.
+                // We *could* re-render the shapefile here, but it's more efficient
+                // to do it once in connectedCallback, after markers are loaded.
             }
         }
     }
@@ -67,10 +70,12 @@ export default class MapOfThingsMap extends LightningElement {
                 loadScript(this, LEAFLET_JS + SHPFILE_JS_URL)
             ]);
             this.drawMap();
+
         } catch (error) {
             console.error('Error loading external libraries:', error);
         }
     }
+
 
     async drawMap() {
         const container = this.template.querySelector(MAP_CONTAINER);
@@ -91,125 +96,117 @@ export default class MapOfThingsMap extends LightningElement {
             this.renderMarkers();
         }
 
-        // Render shapefile
+        // Render shapefile *after* markers, so we can use the markers for filtering
         await this.renderShapefile();
 
         // Dispatch custom event to notify the map is initialized
         this.dispatchEvent(new CustomEvent(CUSTOM_EVENT_INIT, { detail: this.map }));
     }
 
-renderMarkers() {
-    // Clear existing markers
-    if (this.markerLayer) {
-        this.map.removeLayer(this.markerLayer);
-    }
-
-    // Define custom icon for the markers
-    const customIcon = L.icon({
-        iconUrl: 'https://www.trustindiana.in.gov/wp-content/uploads/2018/06/School-Icon-300x300@2x.png', // Custom icon URL
-        iconSize: [50, 50], // Adjust the size of the icon as needed
-        iconAnchor: [25, 50] // Anchor point to properly position the icon on the map
-    });
-
-    // Create a layer group for the markers
-    this.markerLayer = L.layerGroup(
-        this.markers.map(marker => {
-            return L.marker([marker.lat, marker.lng], {
-                icon: customIcon, // Use the custom icon
-                title: marker.title || '',
-                rotationAngle: marker.rotationAngle || 0 // Optional: if using the marker rotation addon
-            }).bindPopup(marker.popupContent || '');
-        })
-    );
-
-    // Add the marker layer to the map
-    this.markerLayer.addTo(this.map);
-
-    // Auto fit bounds if enabled
-    if (this.autoFitBounds && this.markersExist) {
-        this.map.flyToBounds(this.bounds, { padding: FIT_BOUNDS_PADDING });
-    }
-}
-
-async renderShapefile() {
-    try {
-        const shapefileUrl = SCHOOLDISTRICTS_ZIP;
-
-        const response = await fetch(shapefileUrl);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
+    renderMarkers() {
+        // Clear existing markers
+        if (this.markerLayer) {
+            this.map.removeLayer(this.markerLayer);
         }
 
-        const arrayBuffer = await response.arrayBuffer();
-        let geojson = await shp(arrayBuffer);
+        // Define custom icon for the markers
+        const customIcon = L.icon({
+            iconUrl: 'https://www.trustindiana.in.gov/wp-content/uploads/2018/06/School-Icon-300x300@2x.png', // Custom icon URL
+            iconSize: [50, 50], // Adjust the size of the icon as needed
+            iconAnchor: [25, 50] // Anchor point to properly position the icon on the map
+        });
 
-        console.log('GeoJSON Output:', geojson); // Debugging
-
-        // Ensure geojson is valid
-        const geojsonData = Array.isArray(geojson) ? geojson[0] : geojson;
-        if (!geojsonData || !geojsonData.features) {
-            console.error('GeoJSON data is not in expected format:', geojson);
-            return;
-        }
-
-        // Ensure markers exist
-        if (!this.markersExist) {
-            console.warn('No markers available.');
-            return;
-        }
-
-        const markerPoints = this.markers.map(marker => L.latLng(marker.lat, marker.lng));
-
-        // Filter polygons that contain at least one marker
-        const filteredGeojson = {
-            ...geojsonData,
-            features: geojsonData.features.filter(feature => {
-                if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
-                    const polygonLayer = L.geoJSON(feature);
-                    if (!polygonLayer.getBounds().isValid()) {
-                        console.warn('Skipping feature with invalid bounds:', feature);
-                        return false;
-                    }
-                    return markerPoints.some(marker => polygonLayer.getBounds().contains(marker));
-                }
-                return false;
+        // Create a layer group for the markers
+        this.markerLayer = L.layerGroup(
+            this.markers.map(marker => {
+                return L.marker([marker.lat, marker.lng], {
+                    icon: customIcon, // Use the custom icon
+                    title: marker.title || '',
+                    rotationAngle: marker.rotationAngle || 0 // Optional: if using the marker rotation addon
+                }).bindPopup(marker.popupContent || '');
             })
-        };
+        );
 
-        console.log('Filtered GeoJSON:', filteredGeojson); // Debugging
+        // Add the marker layer to the map
+        this.markerLayer.addTo(this.map);
 
-        // Ensure we have polygons to display
-        if (!filteredGeojson.features.length) {
-            console.warn('No polygons found that overlap markers.');
-            return;
+        // Auto fit bounds if enabled
+        if (this.autoFitBounds && this.markersExist) {
+            this.map.flyToBounds(this.bounds, { padding: FIT_BOUNDS_PADDING });
         }
+    }
 
-        // Add filtered GeoJSON to the map
-        const geoJsonLayer = L.geoJSON(filteredGeojson, {
-            style: function(feature) {
-                return {
-                    color: '#CC5500',
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.5
-                };
-            },
-            onEachFeature: (feature, layer) => {
-                if (feature.properties) {
-                    layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
+
+    async renderShapefile() {
+        try {
+            const shapefileUrl = SCHOOLDISTRICTS_ZIP;
+
+            // Fetch and parse the Shapefile
+            const response = await fetch(shapefileUrl);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
+            }
+
+            const arrayBuffer = await response.arrayBuffer();
+            const geojson = await shp(arrayBuffer);
+
+            // --- Intersection Logic ---
+            const filteredFeatures = [];
+
+            if (this.markersExist) {  // Only filter if markers exist
+                for (const feature of geojson.features) {
+                    const polygon = L.geoJSON(feature); // Create a temporary Leaflet layer for the polygon
+                    for (const marker of this.markerLayer.getLayers()) { // Iterate through rendered markers
+                        if (L.GeometryUtil.intersects(marker, polygon)) {
+                            filteredFeatures.push(feature);
+                            break; //  add the feature and move to the next
+                        }
+                    }
+                }
+            } else {
+                // If no markers, show all features (or none, depending on your requirement)
+                filteredFeatures.push(...geojson.features); // Show all
+                // OR: filteredFeatures = [];  // Show none
+            }
+
+
+            // Create a new GeoJSON object with the filtered features
+            const filteredGeoJSON = {
+                type: "FeatureCollection",
+                features: filteredFeatures
+            };
+
+            // Add GeoJSON to the map with styles
+            const geoJsonLayer = L.geoJSON(filteredGeoJSON, {
+                style: function (feature) {
+                    return {
+                        color: '#CC5500',  // Consistent color
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.5
+                    };
+                },
+                onEachFeature: (feature, layer) => {
+                    if (feature.properties) {
+                        layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
+                    }
+                }
+            }).addTo(this.map);
+
+
+            // Fit map bounds to GeoJSON *if* there are features
+            if (this.autoFitBounds && filteredFeatures.length > 0) {
+                const bounds = geoJsonLayer.getBounds();
+                if (bounds.isValid()) {
+                    this.map.fitBounds(bounds);
                 }
             }
-        }).addTo(this.map);
 
-        // Fit map bounds to the filtered polygons
-        if (this.autoFitBounds && geoJsonLayer.getBounds().isValid()) {
-            this.map.fitBounds(geoJsonLayer.getBounds());
+
+        } catch (error) {
+            console.error('Error loading or parsing shapefile:', error);
         }
-    } catch (error) {
-        console.error('Error loading or parsing shapefile:', error);
     }
-}
-
 
     generatePopupContent(properties) {
         let content = '';
