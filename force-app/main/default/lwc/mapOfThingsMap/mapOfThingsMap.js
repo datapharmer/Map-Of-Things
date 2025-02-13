@@ -135,34 +135,54 @@ async renderShapefile() {
     try {
         const shapefileUrl = SCHOOLDISTRICTS_ZIP;
 
-        // Fetch and parse the Shapefile from the .zip file
         const response = await fetch(shapefileUrl);
         if (!response.ok) {
             throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
         }
 
         const arrayBuffer = await response.arrayBuffer();
-        const geojson = await shp(arrayBuffer); // Convert Shapefile ZIP to GeoJSON
+        let geojson = await shp(arrayBuffer);
 
-        if (!geojson || !this.markersExist) {
-            console.warn('No geojson data or markers available.');
+        console.log('GeoJSON Output:', geojson); // Debugging
+
+        // Ensure geojson is valid
+        const geojsonData = Array.isArray(geojson) ? geojson[0] : geojson;
+        if (!geojsonData || !geojsonData.features) {
+            console.error('GeoJSON data is not in expected format:', geojson);
             return;
         }
 
-        // Convert markers to Leaflet LatLng objects
+        // Ensure markers exist
+        if (!this.markersExist) {
+            console.warn('No markers available.');
+            return;
+        }
+
         const markerPoints = this.markers.map(marker => L.latLng(marker.lat, marker.lng));
 
         // Filter polygons that contain at least one marker
         const filteredGeojson = {
-            ...geojson,
-            features: geojson.features.filter(feature => {
+            ...geojsonData,
+            features: geojsonData.features.filter(feature => {
                 if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
-                    const polygon = L.geoJSON(feature);
-                    return markerPoints.some(marker => polygon.getBounds().contains(marker)); 
+                    const polygonLayer = L.geoJSON(feature);
+                    if (!polygonLayer.getBounds().isValid()) {
+                        console.warn('Skipping feature with invalid bounds:', feature);
+                        return false;
+                    }
+                    return markerPoints.some(marker => polygonLayer.getBounds().contains(marker));
                 }
                 return false;
             })
         };
+
+        console.log('Filtered GeoJSON:', filteredGeojson); // Debugging
+
+        // Ensure we have polygons to display
+        if (!filteredGeojson.features.length) {
+            console.warn('No polygons found that overlap markers.');
+            return;
+        }
 
         // Add filtered GeoJSON to the map
         const geoJsonLayer = L.geoJSON(filteredGeojson, {
@@ -171,7 +191,7 @@ async renderShapefile() {
                     color: '#CC5500',
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.5 // Adjust fill opacity for visibility
+                    fillOpacity: 0.5
                 };
             },
             onEachFeature: (feature, layer) => {
