@@ -51,11 +51,9 @@ export default class MapOfThingsMap extends LightningElement {
         return [];
     }
 
-renderedCallback() {
-    if (this.template.querySelector(MAP_CONTAINER)) {
+    renderedCallback() {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
-}
 
     async connectedCallback() {
         try {
@@ -108,28 +106,19 @@ renderMarkers() {
 
     // Define custom icon for the markers
     const customIcon = L.icon({
-        iconUrl: 'https://www.trustindiana.in.gov/wp-content/uploads/2018/06/School-Icon-300x300@2x.png',
-        iconSize: [50, 50],
-        iconAnchor: [25, 50]
+        iconUrl: 'https://www.trustindiana.in.gov/wp-content/uploads/2018/06/School-Icon-300x300@2x.png', // Custom icon URL
+        iconSize: [50, 50], // Adjust the size of the icon as needed
+        iconAnchor: [25, 50] // Anchor point to properly position the icon on the map
     });
 
     // Create a layer group for the markers
     this.markerLayer = L.layerGroup(
         this.markers.map(marker => {
-            const leafletMarker = L.marker([marker.lat, marker.lng], {
-                icon: customIcon,
+            return L.marker([marker.lat, marker.lng], {
+                icon: customIcon, // Use the custom icon
                 title: marker.title || '',
-                rotationAngle: marker.rotationAngle || 0
-            });
-
-            // Create popup content using sanitized DOM methods
-            if (marker.popupContent) {
-                const popupContent = document.createElement('div');
-                popupContent.innerHTML = marker.popupContent;
-                leafletMarker.bindPopup(popupContent);
-            }
-
-            return leafletMarker;
+                rotationAngle: marker.rotationAngle || 0 // Optional: if using the marker rotation addon
+            }).bindPopup(marker.popupContent || '');
         })
     );
 
@@ -141,6 +130,7 @@ renderMarkers() {
         this.map.flyToBounds(this.bounds, { padding: FIT_BOUNDS_PADDING });
     }
 }
+
 async renderShapefile() {
     try {
         const shapefileUrl = SCHOOLDISTRICTS_ZIP;
@@ -168,7 +158,8 @@ async renderShapefile() {
         const geoJsonLayer = L.geoJSON(geojson, {
             style: function(feature) {
                 return {
-                    color: getRandomColor(), // Assign a random color to each feature
+                    color: '#CC5500',
+                    //color: getRandomColor(), // Assign a random color to each feature
                     weight: 2,
                     opacity: 1,
                     fillOpacity: 0.5 // Adjust fill opacity for visibility
@@ -193,15 +184,13 @@ async renderShapefile() {
     }
 }
 
-generatePopupContent(properties) {
-    const content = document.createElement('div');
-    for (const key in properties) {
-        if (properties.hasOwnProperty(key)) {
-            const row = document.createElement('div');
-            row.textContent = `${key}: ${properties[key]}`;
-            content.appendChild(row);
+    generatePopupContent(properties) {
+        let content = '';
+        for (const key in properties) {
+            if (properties.hasOwnProperty(key)) {
+                content += `${key}: ${properties[key]}<br>`;
+            }
         }
+        return content;
     }
-    return content.innerHTML;
-}
 }
