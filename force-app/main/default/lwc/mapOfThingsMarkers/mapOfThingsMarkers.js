@@ -120,23 +120,19 @@ export default class MapOfThingsMarkers extends LightningElement {
         const groupName = this.leafletMarker[markerId].group;
         this.removeFromLayerGroup(markerId, groupName);
     }
-createMarker(newMarker) {
-    const { id, lat, lng, icon, group } = newMarker;
-	const imgurl = icon;
-	const angle = 0;
-    const popupContent = newMarker.popup || ''; // Fallback content
-
-    const marker = this.useCustomMarker ? L.marker([lat, lng], {
-        icon: this.getMarkerIcon(imgurl),
-        iconAngle: 0
-    }) : L.marker([lat, lng]);
-
-    marker.addTo(this.map)
-          .bindPopup(popupContent, { closeOnClick: false }); // Ensure proper binding
-
-    this.leafletMarker[id] = { lat, lng, popup: popupContent, angle, imgurl, marker, group };
-    this.initLayerGroup(newMarker);
-}
+    createMarker(newMarker) {
+        const { id, lat, lng, icon, group } = newMarker;
+        const imgurl = icon;
+        const angle = 0;
+        const popup = L.popup().setContent(newMarker.popup);
+        const marker = this.useCustomMarker ? L.marker([lat, lng], {
+            icon: this.getMarkerIcon(imgurl),
+            iconAngle: 0
+        }): L.marker([lat, lng]);
+        marker.addTo(this.map).bindPopup(popup);
+        this.leafletMarker[id] = { lat, lng, popup, angle, imgurl, marker, group };
+        this.initLayerGroup(newMarker);
+    }
     changeMarker(newMarker) {
         this.updatePopup(newMarker);
         this.updateLayerGroup(newMarker);
