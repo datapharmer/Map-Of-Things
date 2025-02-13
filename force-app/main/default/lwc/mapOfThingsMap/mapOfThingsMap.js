@@ -33,7 +33,7 @@ export default class MapOfThingsMap extends LightningElement {
         if (newMarkers && newMarkers.length >= 0) {
             this._markers = [...newMarkers];
             if (this.map) {
-                // No longer rendering markers directly
+                // No longer rendering markers
             }
         }
     }
@@ -109,6 +109,10 @@ export default class MapOfThingsMap extends LightningElement {
                 this.doesShapeContainMarker(feature)
             );
 
+            if (filteredFeatures.length === 0) {
+                console.warn('No shapes contain markers.');
+            }
+
             // Create a new GeoJSON object with only the filtered features
             const filteredGeoJson = { type: "FeatureCollection", features: filteredFeatures };
 
@@ -160,10 +164,27 @@ export default class MapOfThingsMap extends LightningElement {
             return false;
         }
 
+        // Ensure shape is properly initialized
+        if (!shape) return false;
+
         // Check if at least one marker is inside the shape
         return this.markers.some(marker => 
-            shape.getBounds().contains([marker.lat, marker.lng])
+            this.isPointInsidePolygon([marker.lat, marker.lng], shape)
         );
+    }
+
+    /**
+     * Checks if a point is inside a Leaflet Polygon
+     * @param {Array} point - [lat, lng] of the marker
+     * @param {L.Polygon} polygon - Leaflet Polygon object
+     * @returns {boolean} - True if the point is inside the polygon
+     */
+    isPointInsidePolygon(point, polygon) {
+        // Convert point to Leaflet LatLng
+        const latLng = L.latLng(point);
+
+        // Check if the point is inside the polygon
+        return polygon.getBounds().contains(latLng) && polygon.getLayers().some(layer => layer instanceof L.Polygon && layer.contains(latLng));
     }
 
     generatePopupContent(properties) {
