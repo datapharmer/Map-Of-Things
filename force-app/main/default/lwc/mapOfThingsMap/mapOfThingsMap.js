@@ -6,9 +6,10 @@ import SCHOOLDISTRICTS_ZIP from '@salesforce/resourceUrl/schooldistricts';
 const LEAFLET_CSS_URL = '/leaflet.css';
 const LEAFLET_JS_URL = '/leaflet.js';
 const LEAFLETADDON_JS_URL = '/leafletjs_marker_rotate_addon.js';
+const TURF_JS_URL = '/turf.js';
 const SHPFILE_JS_URL = '/leaflet.shpfile.js';
 const SHP_JS_URL = '/shp.js';
-const CATILINE_JS_URL = '/catiline.js';  // Make sure this path is correct
+const CATILINE_JS_URL = '/catiline.js';
 const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.inner-map-container';
@@ -17,7 +18,6 @@ const CUSTOM_EVENT_INIT = 'init';
 export default class MapOfThingsMap extends LightningElement {
     map;
     _markers = [];
-    markerLayer; // Declare markerLayer here
 
     @api tileServerUrl;
     @api tileServerAttribution;
@@ -34,9 +34,7 @@ export default class MapOfThingsMap extends LightningElement {
         if (newMarkers && newMarkers.length >= 0) {
             this._markers = [...newMarkers];
             if (this.map) {
-                this.renderMarkers(); //  render markers when they are set.
-                // We *could* re-render the shapefile here, but it's more efficient
-                // to do it once in connectedCallback, after markers are loaded.
+                //this.renderMarkers(); // Render markers whenever the markers array is updated.
             }
         }
     }
@@ -65,17 +63,17 @@ export default class MapOfThingsMap extends LightningElement {
                 loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
                 loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
                 loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
+                loadScript(this, LEAFLET_JS + TURF_JS_URL),                
                 loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
                 loadScript(this, LEAFLET_JS + SHP_JS_URL),
-                loadScript(this, LEAFLET_JS + SHPFILE_JS_URL)
+                loadScript(this, LEAFLET_JS + SHPFILE_JS_URL),
+                loadScript(this, TURF_JS) // Load turf.js
             ]);
             this.drawMap();
-
         } catch (error) {
             console.error('Error loading external libraries:', error);
         }
     }
-
 
     async drawMap() {
         const container = this.template.querySelector(MAP_CONTAINER);
@@ -96,7 +94,7 @@ export default class MapOfThingsMap extends LightningElement {
             this.renderMarkers();
         }
 
-        // Render shapefile *after* markers, so we can use the markers for filtering
+        // Render shapefile
         await this.renderShapefile();
 
         // Dispatch custom event to notify the map is initialized
@@ -136,54 +134,53 @@ export default class MapOfThingsMap extends LightningElement {
         }
     }
 
-
     async renderShapefile() {
         try {
             const shapefileUrl = SCHOOLDISTRICTS_ZIP;
 
-            // Fetch and parse the Shapefile
+            // Fetch and parse the Shapefile from the .zip file
             const response = await fetch(shapefileUrl);
             if (!response.ok) {
                 throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
             }
 
             const arrayBuffer = await response.arrayBuffer();
-            const geojson = await shp(arrayBuffer);
+            const geojson = await shp(arrayBuffer); // Use `shp.js` to parse the zip file into GeoJSON
 
-            // --- Intersection Logic ---
-            const filteredFeatures = [];
-
-            if (this.markersExist) {  // Only filter if markers exist
-                for (const feature of geojson.features) {
-                    const polygon = L.geoJSON(feature); // Create a temporary Leaflet layer for the polygon
-                    for (const marker of this.markerLayer.getLayers()) { // Iterate through rendered markers
-                        if (L.GeometryUtil.intersects(marker, polygon)) {
-                            filteredFeatures.push(feature);
-                            break; //  add the feature and move to the next
-                        }
-                    }
-                }
-            } else {
-                // If no markers, show all features (or none, depending on your requirement)
-                filteredFeatures.push(...geojson.features); // Show all
-                // OR: filteredFeatures = [];  // Show none
-            }
-
+            // Filter GeoJSON features to only include those that intersect with any marker
+            const filteredFeatures = geojson.features.filter(feature => {
+                const polygon = turf.polygon(feature.geometry.coordinates);
+                return this.markers.some(marker => {
+                    const point = turf.point([marker.lng, marker.lat]);
+                    return turf.booleanIntersects(polygon, point);
+                });
+            });
 
             // Create a new GeoJSON object with the filtered features
             const filteredGeoJSON = {
-                type: "FeatureCollection",
+                type: 'FeatureCollection',
                 features: filteredFeatures
             };
 
-            // Add GeoJSON to the map with styles
+            // Function to generate a random color
+            function getRandomColor() {
+                const letters = '0123456789ABCDEF';
+                let color = '#';
+                for (let i = 0; i < 6; i++) {
+                    color += letters[Math.floor(Math.random() * 16)];
+                }
+                return color;
+            }
+
+            // Add filtered GeoJSON to the map with styles
             const geoJsonLayer = L.geoJSON(filteredGeoJSON, {
-                style: function (feature) {
+                style: function(feature) {
                     return {
-                        color: '#CC5500',  // Consistent color
+                        color: '#CC5500',
+                        //color: getRandomColor(), // Assign a random color to each feature
                         weight: 2,
                         opacity: 1,
-                        fillOpacity: 0.5
+                        fillOpacity: 0.5 // Adjust fill opacity for visibility
                     };
                 },
                 onEachFeature: (feature, layer) => {
@@ -193,16 +190,13 @@ export default class MapOfThingsMap extends LightningElement {
                 }
             }).addTo(this.map);
 
-
-            // Fit map bounds to GeoJSON *if* there are features
-            if (this.autoFitBounds && filteredFeatures.length > 0) {
+            // Fit map bounds to filtered GeoJSON
+            if (this.autoFitBounds) {
                 const bounds = geoJsonLayer.getBounds();
                 if (bounds.isValid()) {
                     this.map.fitBounds(bounds);
                 }
             }
-
-
         } catch (error) {
             console.error('Error loading or parsing shapefile:', error);
         }
