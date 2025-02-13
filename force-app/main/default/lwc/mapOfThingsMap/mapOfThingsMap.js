@@ -17,7 +17,6 @@ const CUSTOM_EVENT_INIT = 'init';
 export default class MapOfThingsMap extends LightningElement {
     map;
     _markers = [];
-    geoJsonLayer; // Add this line
 
     @api tileServerUrl;
     @api tileServerAttribution;
@@ -34,7 +33,7 @@ export default class MapOfThingsMap extends LightningElement {
         if (newMarkers && newMarkers.length >= 0) {
             this._markers = [...newMarkers];
             if (this.map) {
-                this.updateShapefileVisibility(); // Call the new method here
+                //this.renderMarkers(); // Render markers whenever the markers array is updated.
             }
         }
     }
@@ -64,7 +63,8 @@ export default class MapOfThingsMap extends LightningElement {
                 loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
                 loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
                 loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
-                loadScript(this, LEAFLET_JS + SHP_JS_URL)
+                loadScript(this, LEAFLET_JS + SHP_JS_URL),
+                loadScript(this, LEAFLET_JS + SHPFILE_JS_URL)
             ]);
             this.drawMap();
         } catch (error) {
@@ -134,56 +134,92 @@ renderMarkers() {
 async renderShapefile() {
     try {
         const shapefileUrl = SCHOOLDISTRICTS_ZIP;
-
-        // Fetch and parse the Shapefile from the .zip file
         const response = await fetch(shapefileUrl);
         if (!response.ok) {
             throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
         }
 
         const arrayBuffer = await response.arrayBuffer();
-        const geojson = await shp(arrayBuffer); // Use `shp.js` to parse the zip file into GeoJSON
+        const geojson = await shp(arrayBuffer);
 
-        // Function to generate a random color
-        function getRandomColor() {
-            const letters = '0123456789ABCDEF';
-            let color = '#';
-            for (let i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
-            }
-            return color;
-        }
-
-        // Add GeoJSON to the map with styles
-        this.geoJsonLayer = L.geoJSON(geojson, {  // Store the layer
+        // Create the GeoJSON layer with a filter function
+        const geoJsonLayer = L.geoJSON(geojson, {
             style: function(feature) {
                 return {
                     color: '#CC5500',
-                    //color: getRandomColor(), // Assign a random color to each feature
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.5 // Adjust fill opacity for visibility
+                    fillOpacity: 0.5
                 };
+            },
+            filter: (feature) => {
+                // Convert feature to a Leaflet polygon/multipolygon
+                const featureLayer = L.geoJSON(feature);
+                const featureBounds = featureLayer.getBounds();
+                
+                // Check if any markers are within this feature's bounds
+                return this.markers.some(marker => {
+                    const markerLatLng = L.latLng(marker.lat, marker.lng);
+                    
+                    // First do a quick bounds check
+                    if (!featureBounds.contains(markerLatLng)) {
+                        return false;
+                    }
+                    
+                    // Then do precise polygon containment check
+                    return featureLayer.getLayers().some(layer => {
+                        // For multipolygons, we need to check each polygon
+                        if (layer.feature.geometry.type === 'MultiPolygon') {
+                            return layer.feature.geometry.coordinates.some(polygon => {
+                                return this.isPointInPolygon(markerLatLng, polygon[0]);
+                            });
+                        }
+                        // For single polygons
+                        return this.isPointInPolygon(markerLatLng, 
+                            layer.feature.geometry.coordinates[0]);
+                    });
+                });
             },
             onEachFeature: (feature, layer) => {
                 if (feature.properties) {
-                    layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
+                    layer.bindPopup(this.generatePopupContent(feature.properties), 
+                        { maxHeight: 200 });
                 }
             }
         }).addTo(this.map);
 
-        // Fit map bounds to GeoJSON
+        // Fit map bounds to GeoJSON if needed
         if (this.autoFitBounds) {
-            const bounds = this.geoJsonLayer.getBounds();
+            const bounds = geoJsonLayer.getBounds();
             if (bounds.isValid()) {
                 this.map.fitBounds(bounds);
             }
         }
-
-        this.updateShapefileVisibility(); // Call the new method here
     } catch (error) {
         console.error('Error loading or parsing shapefile:', error);
     }
+}
+
+// Add helper method for point-in-polygon check
+isPointInPolygon(point, polygon) {
+    // Ray casting algorithm
+    let inside = false;
+    const x = point.lng;
+    const y = point.lat;
+    
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i][0];
+        const yi = polygon[i][1];
+        const xj = polygon[j][0];
+        const yj = polygon[j][1];
+        
+        const intersect = ((yi > y) !== (yj > y))
+            && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            
+        if (intersect) inside = !inside;
+    }
+    
+    return inside;
 }
 
     generatePopupContent(properties) {
@@ -194,75 +230,5 @@ async renderShapefile() {
             }
         }
         return content;
-    }
-
-    updateShapefileVisibility() {
-        if (!this.geoJsonLayer || !this.markersExist) {
-            return;
-        }
-
-        this.geoJsonLayer.eachLayer(layer => {
-            let markerInside = false;
-            for (let i = 0; i < this.markers.length; i++) {
-                const marker = this.markers[i];
-                const point = L.latLng(marker.lat, marker.lng);
-
-                if (this.isMarkerInsideShape(point, layer)) {
-                    markerInside = true;
-                    break;
-                }
-            }
-
-            if (markerInside) {
-                layer.setStyle({ opacity: 1, fillOpacity: 0.5 }); // Make visible
-            } else {
-                layer.setStyle({ opacity: 0, fillOpacity: 0 }); // Make invisible
-            }
-        });
-    }
-
-    isMarkerInsideShape(point, layer) {
-        if (layer instanceof L.Polygon || layer instanceof L.Polyline) {
-            const latlngs = layer.getLatLngs();
-            for (let i = 0; i < latlngs.length; i++) {
-                const polygon = latlngs[i];
-                if (this.isPointInPolygon(point, polygon)) {
-                    return true;
-                }
-            }
-        } else if (layer instanceof L.MultiPolygon) {
-            const polygons = layer.getLatLngs();
-            for (let i = 0; i < polygons.length; i++) {
-                const polygonSet = polygons[i];
-                 for (let j = 0; j < polygonSet.length; j++) {
-                    const polygon = polygonSet[j];
-                    if (this.isPointInPolygon(point, polygon)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-
-    //modified ray casting algorithm from leaflet
-    isPointInPolygon(point, polygon) {
-        let inside = false;
-        let part, p1, p2, i, len, latlngs;
-        latlngs = polygon;
-
-        if (!latlngs) {
-            return false;
-        }
-
-        for (i = 0, len = latlngs.length, p2 = latlngs[len - 1]; i < len; p1 = p2, p2 = latlngs[i++]) {
-            if (((p2.lat > point.lat) !== (p1.lat > point.lat)) &&
-                (point.lng < (p1.lng - p2.lng) * (point.lat - p2.lat) / (p1.lat - p2.lat) + p2.lng)) {
-                inside = !inside;
-            }
-        }
-
-        return inside;
     }
 }
