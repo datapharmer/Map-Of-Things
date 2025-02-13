@@ -135,45 +135,55 @@ async renderShapefile() {
     try {
         const shapefileUrl = SCHOOLDISTRICTS_ZIP;
 
-        // Fetch and parse the shapefile
+        // Fetch and parse the Shapefile from the .zip file
         const response = await fetch(shapefileUrl);
         if (!response.ok) {
             throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
         }
-        const arrayBuffer = await response.arrayBuffer();
-        const geojson = await shp(arrayBuffer); // Parse the shapefile into GeoJSON
 
-        // Function to check if a marker is inside a shape
-        const isMarkerInsideShape = (shapeBounds) => {
-            return this.markers.some((marker) => {
-                const latLng = L.latLng(marker.lat, marker.lng);
-                return shapeBounds.contains(latLng);
-            });
+        const arrayBuffer = await response.arrayBuffer();
+        const geojson = await shp(arrayBuffer); // Convert Shapefile ZIP to GeoJSON
+
+        if (!geojson || !this.markersExist) {
+            console.warn('No geojson data or markers available.');
+            return;
+        }
+
+        // Convert markers to Leaflet LatLng objects
+        const markerPoints = this.markers.map(marker => L.latLng(marker.lat, marker.lng));
+
+        // Filter polygons that contain at least one marker
+        const filteredGeojson = {
+            ...geojson,
+            features: geojson.features.filter(feature => {
+                if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
+                    const polygon = L.geoJSON(feature);
+                    return markerPoints.some(marker => polygon.getBounds().contains(marker)); 
+                }
+                return false;
+            })
         };
 
-        // Add filtered shapes to the map
-        const filteredGeoJsonLayer = L.geoJSON(geojson, {
-            style: (feature) => ({
-                color: '#CC5500',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.5,
-            }),
-            filter: (feature) => {
-                // Check if the shape contains any markers
-                const shapeBounds = L.geoJSON(feature).getBounds();
-                return isMarkerInsideShape(shapeBounds);
+        // Add filtered GeoJSON to the map
+        const geoJsonLayer = L.geoJSON(filteredGeojson, {
+            style: function(feature) {
+                return {
+                    color: '#CC5500',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.5 // Adjust fill opacity for visibility
+                };
             },
             onEachFeature: (feature, layer) => {
                 if (feature.properties) {
                     layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
                 }
-            },
+            }
         }).addTo(this.map);
 
-        // Fit map bounds to the filtered GeoJSON layer
-        if (this.autoFitBounds && filteredGeoJsonLayer.getBounds().isValid()) {
-            this.map.fitBounds(filteredGeoJsonLayer.getBounds());
+        // Fit map bounds to the filtered polygons
+        if (this.autoFitBounds && geoJsonLayer.getBounds().isValid()) {
+            this.map.fitBounds(geoJsonLayer.getBounds());
         }
     } catch (error) {
         console.error('Error loading or parsing shapefile:', error);
