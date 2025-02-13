@@ -5,10 +5,8 @@ import SCHOOLDISTRICTS_ZIP from '@salesforce/resourceUrl/schooldistricts';
 
 const LEAFLET_CSS_URL = '/leaflet.css';
 const LEAFLET_JS_URL = '/leaflet.js';
-const LEAFLETADDON_JS_URL = '/leafletjs_marker_rotate_addon.js';
-const SHPFILE_JS_URL = '/leaflet.shpfile.js';
 const SHP_JS_URL = '/shp.js';
-const CATILINE_JS_URL = '/catiline.js';
+
 const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.inner-map-container';
@@ -33,8 +31,7 @@ export default class MapOfThingsMap extends LightningElement {
         if (newMarkers && newMarkers.length >= 0) {
             this._markers = [...newMarkers];
             if (this.map) {
-                // Update the map when markers change
-                this.renderShapefile();
+                this.renderShapefile(); // Re-render shapes when markers are updated
             }
         }
     }
@@ -53,10 +50,7 @@ export default class MapOfThingsMap extends LightningElement {
             await Promise.all([
                 loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
                 loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
-                loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
-                loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
-                loadScript(this, LEAFLET_JS + SHP_JS_URL),
-                loadScript(this, LEAFLET_JS + SHPFILE_JS_URL)
+                loadScript(this, LEAFLET_JS + SHP_JS_URL)
             ]);
             this.drawMap();
         } catch (error) {
@@ -78,7 +72,7 @@ export default class MapOfThingsMap extends LightningElement {
             unloadInvisibleTiles: true
         }).addTo(this.map);
 
-        // Render shapefile (filtered by markers)
+        // Render shapefile
         await this.renderShapefile();
 
         // Dispatch custom event to notify the map is initialized
@@ -123,9 +117,9 @@ export default class MapOfThingsMap extends LightningElement {
                 }
             }).addTo(this.map);
 
-            // Fit map bounds to the filtered GeoJSON
+            // Adjust the map bounds to fit the filtered shapes
             if (this.autoFitBounds && this.geoJsonLayer.getBounds().isValid()) {
-                this.map.fitBounds(this.geoJsonLayer.getBounds());
+                this.map.fitBounds(this.geoJsonLayer.getBounds(), { padding: FIT_BOUNDS_PADDING });
             }
         } catch (error) {
             console.error('Error loading or parsing shapefile:', error);
