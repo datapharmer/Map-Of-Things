@@ -3,6 +3,7 @@ import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
 import SCHOOLDISTRICTS_ZIP from '@salesforce/resourceUrl/schooldistricts';
 
+const TURF_JS_URL = '/turf.js';
 const LEAFLET_CSS_URL = '/leaflet.css';
 const LEAFLET_JS_URL = '/leaflet.js';
 const SHP_JS_URL = '/shp.js';
@@ -45,6 +46,7 @@ export default class MapOfThingsMap extends LightningElement {
             await Promise.all([
                 loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
                 loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
+                loadScript(this, LEAFLET_JS + TURF_JS_URL),
                 loadScript(this, LEAFLET_JS + SHP_JS_URL)
             ]);
             this.initializeMap();
@@ -130,46 +132,36 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
 filterPolygons() {
-    // Ensure both markers and shapefile are loaded
     if (!this.shapefileLoaded || !this.markersLoaded) {
         console.warn('Markers or shapefile not yet loaded.');
         return;
     }
 
     if (this.geoJsonLayer) {
-        const markerLatLngs = this._markers.map(marker => L.latLng(marker.lat, marker.lng));
+        const markerLatLngs = this._markers.map(marker => [marker.lng, marker.lat]); // Convert to GeoJSON [lng, lat] format
 
-        // Debug: Log all marker coordinates
-        console.log('Marker coordinates:', markerLatLngs);
+        console.log('Marker coordinates (GeoJSON format):', markerLatLngs);
 
-        // Iterate through each feature in the GeoJSON layer
         this.geoJsonLayer.eachLayer(layer => {
-            // Check if the layer is a valid polygon
-            if (layer instanceof L.Polygon && layer.getBounds) {
-                const polygonBounds = layer.getBounds();
+            if (layer instanceof L.Polygon) {
+                const polygonCoordinates = layer.feature.geometry.coordinates;
 
-                // Debug: Log polygon bounds
-                console.log('Polygon bounds:', polygonBounds);
-
-                // Check if any marker falls inside the polygon bounds
-                const hasMarkerInside = markerLatLngs.some(latlng => {
-                    const isInside = polygonBounds.contains(latlng);
-                    console.log(`Checking if marker ${latlng} is inside polygon bounds: ${isInside}`);
-                    return isInside;
-                });
+                // Check if any marker is inside the polygon using Turf.js
+                const hasMarkerInside = markerLatLngs.some(markerCoords =>
+                    pointInPolygon(markerCoords, layer.feature)
+                );
 
                 if (!hasMarkerInside) {
                     console.log('Hiding polygon:', layer.feature.properties || 'No properties');
-                    layer.setStyle({ fillOpacity: 0, opacity: 0 }); // Hide the polygon
+                    layer.setStyle({ fillOpacity: 0, opacity: 0 });
                 } else {
                     console.log('Polygon remains visible:', layer.feature.properties || 'No properties');
                 }
-            } else {
-                console.warn('Skipping non-polygon layer:', layer);
             }
         });
     } else {
         console.error('GeoJSON layer is not initialized.');
     }
 }
+    
 }
