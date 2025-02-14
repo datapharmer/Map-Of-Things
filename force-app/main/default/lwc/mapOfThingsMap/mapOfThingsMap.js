@@ -6,7 +6,14 @@ import SCHOOLDISTRICTS_ZIP from '@salesforce/resourceUrl/schooldistricts';
 const TURF_JS_URL = '/turf.js';
 const LEAFLET_CSS_URL = '/leaflet.css';
 const LEAFLET_JS_URL = '/leaflet.js';
+const LEAFLETADDON_JS_URL = '/leafletjs_marker_rotate_addon.js';
+const SHPFILE_JS_URL = '/leaflet.shpfile.js';
 const SHP_JS_URL = '/shp.js';
+const CATILINE_JS_URL = '/catiline.js';
+const MIN_ZOOM = 2;
+const FIT_BOUNDS_PADDING = [20, 20];
+const MAP_CONTAINER = 'div.inner-map-container';
+const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
     map;
@@ -38,7 +45,7 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
     renderedCallback() {
-        this.template.querySelector('div.inner-map-container').style.height = this.mapSizeY;
+        this.template.querySelector('MAP_CONTAINER').style.height = this.mapSizeY;
     }
 
     async connectedCallback() {
@@ -47,7 +54,10 @@ export default class MapOfThingsMap extends LightningElement {
                 loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
                 loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
                 loadScript(this, LEAFLET_JS + TURF_JS_URL),
-                loadScript(this, LEAFLET_JS + SHP_JS_URL)
+				loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
+                loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
+                loadScript(this, LEAFLET_JS + SHP_JS_URL),
+				loadScript(this, LEAFLET_JS + SHPFILE_JS_URL)
             ]);
             this.initializeMap();
         } catch (error) {
@@ -56,7 +66,7 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
     async initializeMap() {
-        const container = this.template.querySelector('div.inner-map-container');
+        const container = this.template.querySelector('MAP_CONTAINER');
         this.map = L.map(container).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);
 
         // Add tile layer
