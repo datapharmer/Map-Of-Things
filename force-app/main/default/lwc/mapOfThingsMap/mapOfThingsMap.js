@@ -173,29 +173,38 @@ export default class MapOfThingsMap extends LightningElement {
         }
     }
 
-    filterPolygons() {
-        // Ensure both markers and shapefile are loaded
-        if (!this.shapefileLoaded || !this.markersLoaded) {
-            return;
-        }
-
-        if (this.geoJsonLayer && this.markerLayer) {
-            const markerLatLngs = this.markers.map(marker => L.latLng(marker.lat, marker.lng));
-
-            // Iterate through each polygon and hide it if no markers are inside
-            this.geoJsonLayer.eachLayer(layer => {
-                if (layer instanceof L.Polygon) {
-                    // Check if any marker falls inside the polygon
-                    const hasMarkerInside = markerLatLngs.some(latlng => layer.getBounds().contains(latlng));
-
-                    // Hide the polygon if no markers are inside
-                    if (!hasMarkerInside) {
-                        layer.setStyle({ fillOpacity: 0, opacity: 0 }); // Hide polygon
-                    }
-                }
-            });
-        }
+filterPolygons() {
+    // Ensure both markers and shapefile are loaded
+    if (!this.shapefileLoaded || !this.markersLoaded) {
+        console.warn('Shapefile or markers not yet loaded!');
+        return;
     }
+
+    if (this.geoJsonLayer) {
+        const markerLatLngs = this.markers.map(marker => L.latLng(marker.lat, marker.lng));
+
+        // Iterate through each feature in the GeoJSON layer
+        this.geoJsonLayer.eachLayer(layer => {
+            // Ensure the layer is a polygon with valid bounds
+            if (layer instanceof L.Polygon && layer.getBounds) {
+                const polygonBounds = layer.getBounds();
+
+                // Check if any marker falls inside the polygon bounds
+                const hasMarkerInside = markerLatLngs.some(latlng => polygonBounds.contains(latlng));
+
+                // Hide the polygon if no markers are inside
+                if (!hasMarkerInside) {
+                    console.log('Hiding polygon:', layer);
+                    layer.setStyle({ fillOpacity: 0, opacity: 0 }); // Hide the polygon
+                }
+            } else {
+                console.warn('Skipping non-polygon layer:', layer);
+            }
+        });
+    } else {
+        console.error('GeoJSON layer not found!');
+    }
+}
 
     generatePopupContent(properties) {
         let content = '';
