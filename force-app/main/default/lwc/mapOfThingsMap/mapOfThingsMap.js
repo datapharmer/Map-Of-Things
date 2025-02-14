@@ -62,82 +62,117 @@ export default class MapOfThingsMap extends LightningElement {
         }
     }
 
-    async drawMap() {
-        const container = this.template.querySelector(MAP_CONTAINER);
-        this.map = L.map(container, {
-            zoomControl: true,
-            tap: false
-        }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);
+async drawMap() {
+    const container = this.template.querySelector(MAP_CONTAINER);
+    this.map = L.map(container, {
+        zoomControl: true,
+        tap: false
+    }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);
 
-        // Add tile layer
-        L.tileLayer(this.tileServerUrl, {
-            minZoom: MIN_ZOOM,
-            attribution: this.tileServerAttribution,
-            unloadInvisibleTiles: true
+    // Add tile layer
+    L.tileLayer(this.tileServerUrl, {
+        minZoom: MIN_ZOOM,
+        attribution: this.tileServerAttribution,
+        unloadInvisibleTiles: true
+    }).addTo(this.map);
+
+    // Render markers and shapefile, then filter polygons without markers
+    await this.renderMarkers();
+    await this.renderShapefile();
+    this.filterPolygonsWithoutMarkers(); // Ensure filtering happens after everything is loaded
+
+    // Dispatch custom event to notify that the map is initialized
+    this.dispatchEvent(new CustomEvent(CUSTOM_EVENT_INIT, { detail: this.map }));
+}
+
+async renderMarkers() {
+    // Clear existing markers
+    if (this.markerLayer) {
+        this.map.removeLayer(this.markerLayer);
+    }
+
+    const customIcon = L.icon({
+        iconUrl: 'https://www.trustindiana.in.gov/wp-content/uploads/2018/06/School-Icon-300x300@2x.png',
+        iconSize: [50, 50],
+        iconAnchor: [25, 50]
+    });
+
+    this.markerLayer = L.layerGroup(
+        this.markers.map(marker => 
+            L.marker([marker.lat, marker.lng], { 
+                icon: customIcon,
+                title: marker.title || '',
+                rotationAngle: marker.rotationAngle || 0
+            }).bindPopup(marker.popupContent || '')
+        )
+    );
+
+    this.markerLayer.addTo(this.map);
+
+    if (this.autoFitBounds && this.markersExist) {
+        this.map.flyToBounds(this.bounds, { padding: FIT_BOUNDS_PADDING });
+    }
+}
+
+async renderShapefile() {
+    try {
+        const shapefileUrl = SCHOOLDISTRICTS_ZIP;
+        const response = await fetch(shapefileUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const geojson = await shp(arrayBuffer);
+
+        this.geoJsonLayer = L.geoJSON(geojson, {
+            style: function(feature) {
+                return {
+                    color: '#CC5500',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.5
+                };
+            },
+            onEachFeature: (feature, layer) => {
+                if (feature.properties) {
+                    layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
+                }
+            }
         }).addTo(this.map);
 
-        // Load the shapefile with filtered polygons
-        await this.renderShapefile();
+        if (this.autoFitBounds) {
+            const bounds = this.geoJsonLayer.getBounds();
+            if (bounds.isValid()) {
+                this.map.fitBounds(bounds);
+            }
+        }
 
-        // Dispatch custom event to notify the map is initialized
-        this.dispatchEvent(new CustomEvent(CUSTOM_EVENT_INIT, { detail: this.map }));
+    } catch (error) {
+        console.error('Error loading or parsing shapefile:', error);
+    }
+}
+
+// New method to filter out polygons without markers inside
+filterPolygonsWithoutMarkers() {
+    if (!this.geoJsonLayer || !this.markerLayer) {
+        console.warn('GeoJSON or markers not loaded yet.');
+        return;
     }
 
-    async renderShapefile() {
-        try {
-            const shapefileUrl = SCHOOLDISTRICTS_ZIP;
-
-            // Fetch and parse the Shapefile from the .zip file
-            const response = await fetch(shapefileUrl);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
-            }
-
-            const arrayBuffer = await response.arrayBuffer();
-            const geojson = await shp(arrayBuffer); // Convert shapefile to GeoJSON
-
-            // Filter shapes to only include those containing at least one marker
-            const filteredFeatures = geojson.features.filter(feature =>
-                this.doesShapeContainMarker(feature)
+    this.geoJsonLayer.eachLayer(layer => {
+        if (layer instanceof L.Polygon || layer instanceof L.MultiPolygon) {
+            const polygonBounds = layer.getBounds();
+            const hasMarkerInside = this.markers.some(marker =>
+                polygonBounds.contains(L.latLng(marker.lat, marker.lng))
             );
 
-            if (filteredFeatures.length === 0) {
-                console.warn('No shapes contain markers.');
+            if (!hasMarkerInside) {
+                this.geoJsonLayer.removeLayer(layer);
             }
-
-            // Create a new GeoJSON object with only the filtered features
-            const filteredGeoJson = { type: "FeatureCollection", features: filteredFeatures };
-
-            // Remove previous layer before rendering new one
-            if (this.geoJsonLayer) {
-                this.map.removeLayer(this.geoJsonLayer);
-            }
-
-            // Add filtered GeoJSON to the map
-            this.geoJsonLayer = L.geoJSON(filteredGeoJson, {
-                style: function (feature) {
-                    return {
-                        color: '#CC5500',
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 0.5
-                    };
-                },
-                onEachFeature: (feature, layer) => {
-                    if (feature.properties) {
-                        layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
-                    }
-                }
-            }).addTo(this.map);
-
-            // Fit map bounds to filtered GeoJSON
-            if (this.autoFitBounds && this.geoJsonLayer.getBounds().isValid()) {
-                this.map.fitBounds(this.geoJsonLayer.getBounds());
-            }
-        } catch (error) {
-            console.error('Error loading or parsing shapefile:', error);
         }
-    }
+    });
+}
 
     /**
      * Determines if a shape contains at least one marker
