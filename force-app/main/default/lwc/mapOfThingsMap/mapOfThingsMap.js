@@ -167,6 +167,18 @@ async renderShapefile() {
             },
             onEachFeature: (feature, layer) => {
                 if (feature.properties) {
+                    // Add label to the map
+                    const labelText = feature.properties.NAME; // Assuming 'NAME' is the property you want to display
+                    const centroid = layer.getBounds().getCenter(); // Get the center of the polygon
+
+                    const label = L.marker(centroid, {
+                        icon: L.divIcon({
+                            className: 'shapefile-label', // You can style this class in your CSS
+                            html: labelText,
+                            iconSize: [100, 20] // Adjust as needed
+                        })
+                       }).addTo(this.map);
+
                     layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
                 }
             }
