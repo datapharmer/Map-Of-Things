@@ -171,14 +171,13 @@ async renderShapefile() {
             onEachFeature: (feature, layer) => {
                 if (feature.properties) {
                     // Add label to the map
-                    const labelText = feature.properties.NAME; // Assuming 'NAME' is the property you want to display
-                    const centroid = layer.getBounds().getCenter(); // Get the center of the polygon
-
+                    const labelText = feature.properties.NAME; 
+                    const centroid = layer.getBounds().getCenter(); 
                     const label = L.marker(centroid, {
                         icon: L.divIcon({
-                            className: 'shapefile-label', // You can style this class in your CSS
+                            className: 'shapefile-label', 
                             html: labelText,
-                            iconSize: [100, 20] // Adjust as needed
+                            iconSize: [100, 20] 
                         })
                        }).addTo(this.map);
 
@@ -221,7 +220,6 @@ filterShapefileByMarkers() {
 }
 
 isMarkerInsidePolygon(markerLatLng, polygonLatLngs) {
-    //credit: ChatGPT for the below code
     let inside = false;
     for (let i = 0, j = polygonLatLngs.length - 1; i < polygonLatLngs.length; j = i++) {
         const lat1 = polygonLatLngs[i].lat;
