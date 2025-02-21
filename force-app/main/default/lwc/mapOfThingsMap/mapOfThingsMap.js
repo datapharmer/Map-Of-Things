@@ -106,7 +106,7 @@ renderMarkers() {
 
     // Define custom icon for the markers
     const customIcon = L.icon({
-        iconUrl: 'https://www.trustindiana.in.gov/wp-content/uploads/2018/06/School-Icon-300x300@2x.png', // Custom icon URL
+        //iconUrl: 'https://www.trustindiana.in.gov/wp-content/uploads/2018/06/School-Icon-300x300@2x.png', // Custom icon URL
         iconSize: [50, 50], // Adjust the size of the icon as needed
         iconAnchor: [25, 50] // Anchor point to properly position the icon on the map
     });
