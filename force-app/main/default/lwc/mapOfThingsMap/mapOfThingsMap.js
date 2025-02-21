@@ -104,26 +104,29 @@ renderMarkers() {
         this.map.removeLayer(this.markerLayer);
     }
 
-    // Define custom icon for the markers
     const customIcon = L.icon({
-        //iconUrl: 'https://www.trustindiana.in.gov/wp-content/uploads/2018/06/School-Icon-300x300@2x.png', // Custom icon URL
-        iconSize: [50, 50], // Adjust the size of the icon as needed
-        iconAnchor: [25, 50] // Anchor point to properly position the icon on the map
+        iconSize: [50, 50],
+        iconAnchor: [25, 50]
     });
 
     // Create a layer group for the markers
     this.markerLayer = L.layerGroup(
         this.markers.map(marker => {
             return L.marker([marker.lat, marker.lng], {
-                icon: customIcon, // Use the custom icon
+                icon: customIcon,
                 title: marker.title || '',
-                rotationAngle: marker.rotationAngle || 0 // Optional: if using the marker rotation addon
+                rotationAngle: marker.rotationAngle || 0
             }).bindPopup(marker.popupContent || '');
         })
     );
 
     // Add the marker layer to the map
     this.markerLayer.addTo(this.map);
+
+    // Filter polygons after markers are rendered
+    if (this.geoJsonLayer) {
+        this.filterPolygons();
+    }
 
     // Auto fit bounds if enabled
     if (this.autoFitBounds && this.markersExist) {
@@ -133,60 +136,50 @@ renderMarkers() {
 
 async renderShapefile() {
     try {
-        const shapefileUrl = SCHOOLDISTRICTS_ZIP;
-
-        // Fetch and parse the Shapefile from the .zip file
-        const response = await fetch(shapefileUrl);
+        const shpfile = SCHOOLDISTRICTS_ZIP;
+        const response = await fetch(shpfile);
         if (!response.ok) {
             throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
         }
 
         const arrayBuffer = await response.arrayBuffer();
-        const geojson = await shp(arrayBuffer); // Use `shp.js` to parse the zip file into GeoJSON
-
-        // Function to generate a random color
-        function getRandomColor() {
-            const letters = '0123456789ABCDEF';
-            let color = '#';
-            for (let i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
-            }
-            return color;
-        }
+        const geojson = await shp(arrayBuffer);
 
         // Add GeoJSON to the map with styles
-        const geoJsonLayer = L.geoJSON(geojson, {
+        this.geoJsonLayer = L.geoJSON(geojson, {
             style: function(feature) {
                 return {
                     color: '#CC5500',
-                    //color: getRandomColor(), // Assign a random color to each feature
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.5 // Adjust fill opacity for visibility
+                    fillOpacity: 0.5
                 };
             },
             onEachFeature: (feature, layer) => {
                 if (feature.properties) {
-                    // Add label to the map
-                    const labelText = feature.properties.NAME; // Assuming 'NAME' is the property you want to display
-                    const centroid = layer.getBounds().getCenter(); // Get the center of the polygon
+                    const labelText = feature.properties.NAME;
+                    const centroid = layer.getBounds().getCenter();
 
                     const label = L.marker(centroid, {
                         icon: L.divIcon({
-                            className: 'shapefile-label', // You can style this class in your CSS
+                            className: 'shapefile-label',
                             html: labelText,
-                            iconSize: [100, 20] // Adjust as needed
+                            iconSize: [100, 20]
                         })
-                       }).addTo(this.map);
+                    }).addTo(this.map);
 
                     layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
                 }
             }
         }).addTo(this.map);
 
-        // Fit map bounds to GeoJSON
+        // Initial filtering of polygons based on existing markers
+        if (this.markers && this.markers.length > 0) {
+            this.filterPolygons();
+        }
+
         if (this.autoFitBounds) {
-            const bounds = geoJsonLayer.getBounds();
+            const bounds = this.geoJsonLayer.getBounds();
             if (bounds.isValid()) {
                 this.map.fitBounds(bounds);
             }
@@ -205,4 +198,13 @@ async renderShapefile() {
         }
         return content;
     }
+
+    checkPolygonForMarkers(layer, markers) {
+    const polygonBounds = layer.getBounds();
+    return markers.some(marker => {
+        const markerLatLng = L.latLng(marker.lat, marker.lng);
+        return polygonBounds.contains(markerLatLng) && layer.contains(markerLatLng);
+    });
+}
+    
 }
