@@ -26,7 +26,7 @@ export default class MapOfThingsMap extends LightningElement {
     @api autoFitBounds;
 
     // The markers property is set by a parent or sibling component.
-    // These marker objects (with at least keys "lat" and "lng") will be used for filtering polygons.
+    // These marker objects (with keys "lat" and "lng") will be used for filtering polygons.
     @api
     get markers() {
         return this._markers;
@@ -78,7 +78,7 @@ export default class MapOfThingsMap extends LightningElement {
 
         // Note: Duplicate marker creation is removed here.
         // It is assumed that a separate markers component is adding marker icons to the map,
-        // and filtering will use the marker data stored in this._markers.
+        // and filtering uses the marker data stored in this._markers.
 
         // Create a dedicated layer for shape labels.
         this.labelLayer = L.layerGroup().addTo(this.map);
@@ -113,21 +113,32 @@ export default class MapOfThingsMap extends LightningElement {
                     if (feature.properties) {
                         // Bind a popup showing all properties.
                         layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
-                        // Create a label marker but do NOT add it yet.
-                        const labelText = feature.properties.NAME;
+                        
+                        // Compute the polygon centroid.
                         const centroid = layer.getBounds().getCenter();
-                        layer.myLabel = L.marker(centroid, {
+
+                        // Offset the label position so it does not overlap with markers.
+                        // Convert the centroid to layer point, shift upward by 20 pixels.
+                        const offsetPoint = this.map.latLngToLayerPoint(centroid);
+                        offsetPoint.y = offsetPoint.y - 20; // Adjust the Y offset as needed.
+                        const labelLatLng = this.map.layerPointToLatLng(offsetPoint);
+
+                        // Create a label marker with the offset position.
+                        const labelText = feature.properties.NAME;
+                        layer.myLabel = L.marker(labelLatLng, {
                             icon: L.divIcon({
                                 className: 'shapefile-label',
                                 html: labelText,
-                                iconSize: [100, 20]
+                                iconSize: [100, 20],
+                                // Optionally, adjust iconAnchor if further tweaking is needed:
+                                iconAnchor: [50, 0]
                             })
                         });
                     }
                 }
             }).addTo(this.map);
 
-            // Filter the polygons using the marker coordinates.
+            // Filter the polygons based on the marker data.
             if (this.markers && this.markers.length > 0) {
                 this.filterPolygons();
             }
@@ -155,8 +166,8 @@ export default class MapOfThingsMap extends LightningElement {
 
     /**
      * Checks if the provided polygon layer contains at least one marker.
-     * It uses the _markers array (which is kept in sync via the markers API property)
-     * to determine if any marker's coordinates lie within the polygon.
+     * It uses the _markers array (set via the markers API property) to determine if any marker's
+     * coordinates lie within the polygon.
      */
     checkPolygonForMarkers(polygonLayer) {
         if (!this._markers || this._markers.length === 0) {
@@ -199,7 +210,7 @@ export default class MapOfThingsMap extends LightningElement {
      * Loop over each polygon from the GeoJSON layer. If a polygon contains
      * at least one marker (based on the coordinates passed via the markers property),
      * adjust the polygon style to be visible and add its label marker.
-     * Otherwise hide the polygon and remove its label from the label layer.
+     * Otherwise, hide the polygon and remove its label from the label layer.
      */
     filterPolygons() {
         if (!this.geoJsonLayer) {
