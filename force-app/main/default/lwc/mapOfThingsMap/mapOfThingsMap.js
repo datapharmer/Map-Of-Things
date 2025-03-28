@@ -54,7 +54,23 @@ export default class MapOfThingsMap extends LightningElement {
     renderedCallback() {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
-
+async connectedCallback() {
+        try {
+            // Load external JS and CSS libraries
+            await Promise.all([
+                loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
+                loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
+                loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
+                loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
+                loadScript(this, LEAFLET_JS + SHP_JS_URL),
+                loadScript(this, LEAFLET_JS + SHPFILE_JS_URL)
+            ]);
+            this.drawMap();
+        } catch (error) {
+            console.error('Error loading external libraries:', error);
+        }
+    }
+    
 async drawMap() {
     const container = this.template.querySelector(MAP_CONTAINER);
     this.map = L.map(container, {
