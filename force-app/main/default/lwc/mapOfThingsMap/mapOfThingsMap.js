@@ -172,9 +172,8 @@ checkPolygonForMarkers(layer) {
     
     let hasMarkerInside = false;
     this.markerLayer.eachLayer(marker => {
-        if (hasMarkerInside) return; // Skip if we already found a marker
         const markerLatLng = marker.getLatLng();
-        if (layer.getBounds().contains(markerLatLng) && layer.contains(markerLatLng)) {
+        if (layer.contains(markerLatLng)) {
             hasMarkerInside = true;
         }
     });
@@ -187,19 +186,11 @@ filterPolygons() {
     this.geoJsonLayer.eachLayer(layer => {
         if (layer.feature && layer.feature.geometry.type.includes('Polygon')) {
             const hasMarkers = this.checkPolygonForMarkers(layer);
-            if (!hasMarkers) {
-                layer.setStyle({ 
-                    opacity: 0, 
-                    fillOpacity: 0,
-                    pointerEvents: 'none' // This will make the hidden polygons non-interactive
-                });
-            } else {
-                layer.setStyle({ 
-                    opacity: 1, 
-                    fillOpacity: 0.5,
-                    pointerEvents: 'auto'
-                });
-            }
+            layer.setStyle({ 
+                opacity: hasMarkers ? 1 : 0, 
+                fillOpacity: hasMarkers ? 0.5 : 0,
+                pointerEvents: hasMarkers ? 'auto' : 'none'
+            });
         }
     });
 }
