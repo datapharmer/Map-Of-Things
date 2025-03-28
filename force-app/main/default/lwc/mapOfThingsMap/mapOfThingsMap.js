@@ -25,7 +25,7 @@ export default class MapOfThingsMap extends LightningElement {
     @api mapDefaultZoomLevel;
     @api autoFitBounds;
 
-    // The markers property is set by a parent/sibling component.
+    // The markers property is set by a parent or sibling component.
     // These marker objects (with keys "lat" and "lng") will be used for filtering shapes.
     @api
     get markers() {
@@ -54,6 +54,10 @@ export default class MapOfThingsMap extends LightningElement {
                 loadScript(this, LEAFLET_JS + SHP_JS_URL),
                 loadScript(this, LEAFLET_JS + SHPFILE_JS_URL)
             ]);
+            // Ensure the global variable is available
+            if (!window.L) {
+                throw new Error('Leaflet did not load correctly.');
+            }
             this.drawMap();
         } catch (error) {
             console.error('Error loading external libraries:', error);
@@ -62,28 +66,29 @@ export default class MapOfThingsMap extends LightningElement {
 
     async drawMap() {
         const container = this.template.querySelector(MAP_CONTAINER);
-        this.map = L.map(container, {
+        // Use window.L to ensure cross-browser compatibility.
+        this.map = window.L.map(container, {
             zoomControl: true,
             tap: false
         }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);
-
-        // Create a new pane for labels having a high z-index and disable pointer events so that markers are clickable.
+    
+        // Create a new pane for labels with a high z-index and disable pointer events so the markers remain clickable.
         this.map.createPane('labelsPane');
         const labelsPane = this.map.getPane('labelsPane');
-        labelsPane.style.zIndex = 650; // ensure labels are above normal marker panes
+        labelsPane.style.zIndex = 650;
         labelsPane.style.pointerEvents = 'none';
-
-        L.tileLayer(this.tileServerUrl, {
+    
+        window.L.tileLayer(this.tileServerUrl, {
             minZoom: MIN_ZOOM,
             attribution: this.tileServerAttribution,
             unloadInvisibleTiles: true
         }).addTo(this.map);
-
-        // Create a dedicated label layer on the labels pane.
-        this.labelLayer = L.layerGroup([], { pane: 'labelsPane' }).addTo(this.map);
-
+    
+        // Create a dedicated layer for labels on the new pane.
+        this.labelLayer = window.L.layerGroup([], { pane: 'labelsPane' }).addTo(this.map);
+    
         await this.renderShapefile();
-
+    
         this.dispatchEvent(new CustomEvent(CUSTOM_EVENT_INIT, { detail: this.map }));
     }
 
@@ -96,9 +101,9 @@ export default class MapOfThingsMap extends LightningElement {
             }
             const arrayBuffer = await response.arrayBuffer();
             const geojson = await shp(arrayBuffer);
-
+    
             // Add the GeoJSON layer with all polygons hidden initially.
-            this.geoJsonLayer = L.geoJSON(geojson, {
+            this.geoJsonLayer = window.L.geoJSON(geojson, {
                 style: function () {
                     return {
                         opacity: 0,
@@ -109,33 +114,31 @@ export default class MapOfThingsMap extends LightningElement {
                 onEachFeature: (feature, layer) => {
                     if (feature.properties) {
                         layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
-
+    
                         // Compute the polygon's bounds center.
                         const boundsCenter = layer.getBounds().getCenter();
-
-                        // Default label position is the center.
                         let labelLatLng = boundsCenter;
-
+    
                         // Find markers (from _markers) that lie inside this polygon.
                         let insideMarkers = [];
                         if (this._markers && this._markers.length > 0) {
                             this._markers.forEach(m => {
-                                const pt = L.latLng(m.lat, m.lng);
+                                const pt = window.L.latLng(m.lat, m.lng);
                                 if (layer.getBounds().contains(pt) && this.pointInPolygon(pt, layer)) {
                                     insideMarkers.push(pt);
                                 }
                             });
                         }
-
+    
                         if (insideMarkers.length > 0) {
                             let sumLat = 0, sumLng = 0;
                             insideMarkers.forEach(pt => {
                                 sumLat += pt.lat;
                                 sumLng += pt.lng;
                             });
-                            let avgMarker = L.latLng(sumLat / insideMarkers.length, sumLng / insideMarkers.length);
-
-                            // Compute vector in layer coordinates from average marker position to polygon center.
+                            let avgMarker = window.L.latLng(sumLat / insideMarkers.length, sumLng / insideMarkers.length);
+    
+                            // Compute vector (in layer coordinates) from the average marker position to the polygon center.
                             const centerPt = this.map.latLngToLayerPoint(boundsCenter);
                             const markerPt = this.map.latLngToLayerPoint(avgMarker);
                             let vector = {
@@ -149,7 +152,7 @@ export default class MapOfThingsMap extends LightningElement {
                                 vector.x = (vector.x / len) * 20;
                                 vector.y = (vector.y / len) * 20;
                             }
-                            const offsetPoint = L.point(centerPt.x + vector.x, centerPt.y + vector.y);
+                            const offsetPoint = window.L.point(centerPt.x + vector.x, centerPt.y + vector.y);
                             const candidate = this.map.layerPointToLatLng(offsetPoint);
                             if (this.pointInPolygon(candidate, layer)) {
                                 labelLatLng = candidate;
@@ -157,9 +160,9 @@ export default class MapOfThingsMap extends LightningElement {
                                 labelLatLng = boundsCenter;
                             }
                         } else {
-                            // If no markers inside, offset slightly upward.
+                            // If no markers, offset slightly upward.
                             const centerPt = this.map.latLngToLayerPoint(boundsCenter);
-                            const offsetPoint = L.point(centerPt.x, centerPt.y - 20);
+                            const offsetPoint = window.L.point(centerPt.x, centerPt.y - 20);
                             const candidate = this.map.layerPointToLatLng(offsetPoint);
                             if (this.pointInPolygon(candidate, layer)) {
                                 labelLatLng = candidate;
@@ -167,28 +170,28 @@ export default class MapOfThingsMap extends LightningElement {
                                 labelLatLng = boundsCenter;
                             }
                         }
-
+    
                         // Create the label marker with bold styling.
-                        // Specify pane 'labelsPane' so that the label appears atop markers.
+                        // Specify pane 'labelsPane' so that the label appears above markers.
                         const labelText = feature.properties.NAME;
-                        layer.myLabel = L.marker(labelLatLng, {
+                        layer.myLabel = window.L.marker(labelLatLng, {
                             pane: 'labelsPane',
-                            icon: L.divIcon({
-                                html: `<span style="font-weight: bold; color: black; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 3px; pointer-events:none;">${labelText}</span>`,
+                            icon: window.L.divIcon({
+                                html: `<span style="font-weight: bold; color: black; background: rgba(255,255,255,0.8); padding:2px 4px; border-radius:3px; pointer-events:none;">${labelText}</span>`,
                                 className: 'shapefile-label',
                                 iconSize: [100, 20],
                                 iconAnchor: [50, 0]
                             }),
-                            interactive: false // ensures the label itself does not intercept mouse events
+                            interactive: false
                         });
                     }
                 }
             }).addTo(this.map);
-
+    
             if (this.markers && this.markers.length > 0) {
                 this.filterPolygons();
             }
-
+    
             if (this.autoFitBounds) {
                 const bounds = this.geoJsonLayer.getBounds();
                 if (bounds.isValid()) {
@@ -209,9 +212,9 @@ export default class MapOfThingsMap extends LightningElement {
         }
         return content;
     }
-
+    
     /**
-     * Uses the standard ray-casting algorithm to test if a point lies inside a polygon.
+     * Uses the standard ray-casting algorithm to test if a point is inside a polygon.
      */
     pointInPolygon(point, polygonLayer) {
         const latlngs = polygonLayer.getLatLngs();
@@ -223,16 +226,18 @@ export default class MapOfThingsMap extends LightningElement {
         const x = point.lng;
         const y = point.lat;
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            const xi = polygon[i].lng, yi = polygon[i].lat;
-            const xj = polygon[j].lng, yj = polygon[j].lat;
+            const xi = polygon[i].lng,
+                  yi = polygon[i].lat;
+            const xj = polygon[j].lng,
+                  yj = polygon[j].lat;
             const intersect = ((yi > y) !== (yj > y)) && (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi);
             if (intersect) inside = !inside;
         }
         return inside;
     }
-
+    
     /**
-     * For every polygon in the GeoJSON layer, update its style and add (or remove) its label
+     * For each polygon from the GeoJSON layer, update its style and add (or remove) its label
      * based on whether it contains any markers (using the _markers array).
      */
     filterPolygons() {
@@ -264,7 +269,7 @@ export default class MapOfThingsMap extends LightningElement {
             }
         });
     }
-
+    
     /**
      * Check if a polygon layer contains at least one marker from the _markers array.
      */
@@ -274,7 +279,7 @@ export default class MapOfThingsMap extends LightningElement {
         }
         let hasMarkerInside = false;
         this._markers.forEach(markerData => {
-            const markerLatLng = L.latLng(markerData.lat, markerData.lng);
+            const markerLatLng = window.L.latLng(markerData.lat, markerData.lng);
             if (polygonLayer.getBounds().contains(markerLatLng) && this.pointInPolygon(markerLatLng, polygonLayer)) {
                 hasMarkerInside = true;
             }
