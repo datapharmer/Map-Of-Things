@@ -17,9 +17,6 @@ const CUSTOM_EVENT_INIT = 'init';
 export default class MapOfThingsMap extends LightningElement {
     map;
     _markers = [];
-    markerLayer;
-    geoJsonLayer;
-    labelLayer;
 
     @api tileServerUrl;
     @api tileServerAttribution;
@@ -28,6 +25,8 @@ export default class MapOfThingsMap extends LightningElement {
     @api mapDefaultZoomLevel;
     @api autoFitBounds;
 
+    // The markers property is expected to be an array of marker objects, for example:
+    // [{ id: 'marker1', lat: 34.05, lng: -118.25, popup: 'Hello World' },...]
     @api
     get markers() {
         return this._markers;
@@ -37,6 +36,7 @@ export default class MapOfThingsMap extends LightningElement {
             this._markers = [...newMarkers];
             if (this.map) {
                 this.renderMarkers();
+                // If the shapefile has already been loaded, re-run filtering
                 if (this.geoJsonLayer) {
                     this.filterPolygons();
                 }
@@ -50,9 +50,7 @@ export default class MapOfThingsMap extends LightningElement {
 
     get bounds() {
         if (this.markersExist) {
-            return this.markers.map(marker => {
-                return [marker.lat, marker.lng];
-            });
+            return this.markers.map(marker => [marker.lat, marker.lng]);
         }
         return [];
     }
@@ -77,7 +75,7 @@ export default class MapOfThingsMap extends LightningElement {
             console.error('Error loading external libraries:', error);
         }
     }
-    
+
     async drawMap() {
         const container = this.template.querySelector(MAP_CONTAINER);
         this.map = L.map(container, {
@@ -85,40 +83,44 @@ export default class MapOfThingsMap extends LightningElement {
             tap: false
         }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);
 
-        // Add tile layer
+        // Create a dedicated layer for markers so that polygon filtering works correctly.
+        this.markerLayer = L.layerGroup().addTo(this.map);
+
+        // Add the tile layer.
         L.tileLayer(this.tileServerUrl, {
             minZoom: MIN_ZOOM,
             attribution: this.tileServerAttribution,
             unloadInvisibleTiles: true
         }).addTo(this.map);
 
-        // Create a marker layer group to hold all markers
-        this.markerLayer = L.layerGroup().addTo(this.map);
-
-        // Render markers if they exist
+        // Render markers (if any) BEFORE loading the shapefile layer.
         if (this.markersExist) {
             this.renderMarkers();
         }
 
-        // Render shapefile, and THEN filter
+        // Render the shapefile layer and then filter the shapes.
         await this.renderShapefile();
 
-        // Dispatch custom event to notify the map is initialized
+        // Dispatch a custom event to notify that the map is initialized.
         this.dispatchEvent(new CustomEvent(CUSTOM_EVENT_INIT, { detail: this.map }));
     }
 
+    /**
+     * Render markers into a dedicated Leaflet layer (markerLayer) so that we can later test 
+     * which shapefile polygons contain a marker.
+     */
     renderMarkers() {
-        // Clear existing markers
         if (this.markerLayer) {
             this.markerLayer.clearLayers();
+        } else {
+            this.markerLayer = L.layerGroup().addTo(this.map);
         }
-
-        // Add new markers
-        this.markers.forEach(marker => {
-            const leafletMarker = L.marker([marker.lat, marker.lng])
-                .bindPopup(marker.popup);
-            
-            leafletMarker.addTo(this.markerLayer);
+        this._markers.forEach(markerData => {
+            const marker = L.marker([markerData.lat, markerData.lng]);
+            if (markerData.popup) {
+                marker.bindPopup(markerData.popup);
+            }
+            marker.addTo(this.markerLayer);
         });
     }
 
@@ -129,22 +131,19 @@ export default class MapOfThingsMap extends LightningElement {
             if (!response.ok) {
                 throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
             }
-
             const arrayBuffer = await response.arrayBuffer();
             const geojson = await shp(arrayBuffer);
 
-            // Create a separate layer group for labels
+            // Create a separate layer group for labels.
             this.labelLayer = L.layerGroup().addTo(this.map);
 
-            // Add GeoJSON to the map with styles - initially hide all polygons
+            // Add the GeoJSON layer. Start with the polygons hidden.
             this.geoJsonLayer = L.geoJSON(geojson, {
                 style: function(feature) {
                     return {
-                        color: '#3388ff',
-                        weight: 2,
                         opacity: 0,
                         fillOpacity: 0,
-                        fillColor: '#3388ff'
+                        pointerEvents: 'none'
                     };
                 },
                 onEachFeature: (feature, layer) => {
@@ -152,8 +151,8 @@ export default class MapOfThingsMap extends LightningElement {
                         const labelText = feature.properties.NAME;
                         const centroid = layer.getBounds().getCenter();
 
-                        // Add label to the separate label layer
-                        const label = L.marker(centroid, {
+                        // Add labels to the explicit label layer.
+                        L.marker(centroid, {
                             icon: L.divIcon({
                                 className: 'shapefile-label',
                                 html: labelText,
@@ -166,15 +165,15 @@ export default class MapOfThingsMap extends LightningElement {
                 }
             }).addTo(this.map);
 
-            // Filter polygons after shapefile is loaded and markers are rendered
-            if (this.markers && this.markers.length > 0) {
+            // Once the shapefile is loaded, filter the polygons so that only those with a marker inside are displayed.
+            if (this.markersExist) {
                 this.filterPolygons();
             }
 
             if (this.autoFitBounds) {
                 const bounds = this.geoJsonLayer.getBounds();
                 if (bounds.isValid()) {
-                    this.map.fitBounds(bounds);
+                    this.map.fitBounds(bounds, { padding: FIT_BOUNDS_PADDING });
                 }
             }
         } catch (error) {
@@ -192,77 +191,71 @@ export default class MapOfThingsMap extends LightningElement {
         return content;
     }
 
+    /**
+     * Check if a given polygon (layer) contains at least one marker.
+     * It uses the polygon’s bounds and a point-in-polygon check.
+     */
     checkPolygonForMarkers(layer) {
         if (!this.markerLayer) return false;
-        
+
         let hasMarkerInside = false;
-        const layerBounds = layer.getBounds();
-        
         this.markerLayer.eachLayer(marker => {
-            if (hasMarkerInside) return; // Skip if we already found a marker
-            
+            if (hasMarkerInside) return;
             const markerLatLng = marker.getLatLng();
-            
-            // First check if marker is within the bounds (faster check)
-            if (layerBounds.contains(markerLatLng)) {
-                // Then do the more precise polygon containment check
-                try {
-                    // For polygons, we need to check if the point is inside
-                    if (layer.contains(markerLatLng)) {
-                        hasMarkerInside = true;
-                    }
-                } catch (e) {
-                    // Some layers might not support contains method
-                    console.warn('Layer does not support contains method:', e);
-                }
+            // First check that the marker is within the polygon's bounding box.
+            if (layer.getBounds().contains(markerLatLng) && this.pointInPolygon(markerLatLng, layer)) {
+                hasMarkerInside = true;
             }
         });
-        
         return hasMarkerInside;
     }
 
+    /**
+     * Determine if a Leaflet point (marker) lies inside a polygon layer.
+     * Uses the ray-casting algorithm.
+     */
+    pointInPolygon(point, layer) {
+        // Get the polygon’s latlngs. For GeoJSON features added via L.geoJSON, the coordinates
+        // are stored as an array (or nested array for MultiPolygon). We assume a single polygon here.
+        const latlngs = layer.getLatLngs();
+        if (!latlngs || !latlngs.length) {
+            return false;
+        }
+        // For a simple polygon, use the first set of coordinates.
+        const polygon = latlngs[0];
+        let inside = false;
+        const x = point.lng,
+            y = point.lat;
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            const xi = polygon[i].lng,
+                yi = polygon[i].lat;
+            const xj = polygon[j].lng,
+                yj = polygon[j].lat;
+            const intersect =
+                (yi > y) !== (yj > y) &&
+                x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+    /**
+     * Iterate over each polygon in the shapefile layer. For polygons that contain at least one
+     * marker (as determined by checkPolygonForMarkers), the polygon’s style is set to be visible.
+     * Otherwise, the polygon remains hidden.
+     */
     filterPolygons() {
         if (!this.geoJsonLayer || !this.markerLayer) return;
-        
         this.geoJsonLayer.eachLayer(layer => {
-            if (layer.feature && layer.feature.geometry && 
-                layer.feature.geometry.type && 
-                layer.feature.geometry.type.includes('Polygon')) {
-                
+            if (layer.feature && layer.feature.geometry.type.includes('Polygon')) {
                 const shouldShow = this.checkPolygonForMarkers(layer);
-                
-                // Update the style to show or hide the polygon
                 layer.setStyle({
                     opacity: shouldShow ? 1 : 0,
-                    fillOpacity: shouldShow ? 0.2 : 0,
+                    fillOpacity: shouldShow ? 0.5 : 0,
                     pointerEvents: shouldShow ? 'auto' : 'none'
                 });
+                if (layer.redraw) layer.redraw();
             }
         });
-        
-        // Update labels visibility to match polygons
-        if (this.labelLayer) {
-            this.labelLayer.eachLayer(label => {
-                const labelPos = label.getLatLng();
-                let showLabel = false;
-                
-                // Check if this label's position is within a visible polygon
-                this.geoJsonLayer.eachLayer(polygonLayer => {
-                    if (showLabel) return;
-                    
-                    if (polygonLayer.options && 
-                        polygonLayer.options.opacity > 0 && 
-                        polygonLayer.getBounds().contains(labelPos)) {
-                        showLabel = true;
-                    }
-                });
-                
-                // Set label visibility
-                const iconEl = label.getElement();
-                if (iconEl) {
-                    iconEl.style.display = showLabel ? 'block' : 'none';
-                }
-            });
-        }
     }
 }
