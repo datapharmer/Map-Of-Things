@@ -116,10 +116,9 @@ async renderShapefile() {
         this.geoJsonLayer = L.geoJSON(geojson, {
             style: function(feature) {
                 return {
-                    color: '#CC5500',
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.5
+                    opacity: 0,
+                    fillOpacity: 0,
+                    pointerEvents: 'none'
                 };
             },
             onEachFeature: (feature, layer) => {
@@ -169,30 +168,39 @@ async renderShapefile() {
 
 checkPolygonForMarkers(layer) {
     if (!this.markerLayer) return false;
-    
+
     let hasMarkerInside = false;
     this.markerLayer.eachLayer(marker => {
+        if (hasMarkerInside) return; // Skip if we already found a marker
         const markerLatLng = marker.getLatLng();
-        if (layer.contains(markerLatLng)) {
+        console.log('markerLatLng', markerLatLng);  //DEBUG
+        console.log('layer.getBounds()', layer.getBounds()); //DEBUG
+        if (layer.getBounds().contains(markerLatLng) && layer.contains(markerLatLng)) {
             hasMarkerInside = true;
         }
     });
     return hasMarkerInside;
 }
 
+
 filterPolygons() {
     if (!this.geoJsonLayer || !this.markerLayer) return;
     
     this.geoJsonLayer.eachLayer(layer => {
         if (layer.feature && layer.feature.geometry.type.includes('Polygon')) {
-            const hasMarkers = this.checkPolygonForMarkers(layer);
-            layer.setStyle({ 
-                opacity: hasMarkers ? 1 : 0, 
-                fillOpacity: hasMarkers ? 0.5 : 0,
-                pointerEvents: hasMarkers ? 'auto' : 'none'
+            const shouldShow = this.checkPolygonForMarkers(layer);
+            
+            layer.setStyle({
+                opacity: shouldShow ? 1 : 0,
+                fillOpacity: shouldShow ? 0.5 : 0,
+                pointerEvents: shouldShow ? 'auto' : 'none'
             });
+            
+            // For complex polygons, might need to redraw
+            if (layer.redraw) layer.redraw();
         }
     });
 }
+
     
 }
