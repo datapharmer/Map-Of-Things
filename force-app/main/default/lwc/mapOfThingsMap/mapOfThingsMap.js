@@ -17,6 +17,9 @@ const CUSTOM_EVENT_INIT = 'init';
 export default class MapOfThingsMap extends LightningElement {
     map;
     _markers = [];
+    markerLayer;
+    geoJsonLayer;
+    labelLayer;
 
     @api tileServerUrl;
     @api tileServerAttribution;
@@ -33,7 +36,10 @@ export default class MapOfThingsMap extends LightningElement {
         if (newMarkers && newMarkers.length >= 0) {
             this._markers = [...newMarkers];
             if (this.map) {
-                //this.renderMarkers(); // Render markers whenever the markers array is updated.
+                this.renderMarkers();
+                if (this.geoJsonLayer) {
+                    this.filterPolygons();
+                }
             }
         }
     }
@@ -54,7 +60,8 @@ export default class MapOfThingsMap extends LightningElement {
     renderedCallback() {
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
-async connectedCallback() {
+
+    async connectedCallback() {
         try {
             // Load external JS and CSS libraries
             await Promise.all([
@@ -71,90 +78,109 @@ async connectedCallback() {
         }
     }
     
-async drawMap() {
-    const container = this.template.querySelector(MAP_CONTAINER);
-    this.map = L.map(container, {
-        zoomControl: true,
-        tap: false
-    }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);
+    async drawMap() {
+        const container = this.template.querySelector(MAP_CONTAINER);
+        this.map = L.map(container, {
+            zoomControl: true,
+            tap: false
+        }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);
 
-    // Add tile layer
-    L.tileLayer(this.tileServerUrl, {
-        minZoom: MIN_ZOOM,
-        attribution: this.tileServerAttribution,
-        unloadInvisibleTiles: true
-    }).addTo(this.map);
-
-    // Render markers if they exist BEFORE shapefile
-    if (this.markersExist) {
-        this.renderMarkers();
-    }
-
-    // Render shapefile, and THEN filter
-    await this.renderShapefile();
-
-
-    // Dispatch custom event to notify the map is initialized
-    this.dispatchEvent(new CustomEvent(CUSTOM_EVENT_INIT, { detail: this.map }));
-}
-
-async renderShapefile() {
-    try {
-        const shpfile = SCHOOLDISTRICTS_ZIP;
-        const response = await fetch(shpfile);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
-        }
-
-        const arrayBuffer = await response.arrayBuffer();
-        const geojson = await shp(arrayBuffer);
-
-        // Create a separate layer group for labels
-        this.labelLayer = L.layerGroup().addTo(this.map);
-
-        // Add GeoJSON to the map with styles
-        this.geoJsonLayer = L.geoJSON(geojson, {
-            style: function(feature) {
-                return {
-                    opacity: 0,
-                    fillOpacity: 0,
-                    pointerEvents: 'none'
-                };
-            },
-            onEachFeature: (feature, layer) => {
-                if (feature.properties) {
-                    const labelText = feature.properties.NAME;
-                    const centroid = layer.getBounds().getCenter();
-
-                    // Add label to the separate label layer
-                    const label = L.marker(centroid, {
-                        icon: L.divIcon({
-                            className: 'shapefile-label',
-                            html: labelText,
-                            iconSize: [100, 20]
-                        })
-                    }).addTo(this.labelLayer);
-
-                    layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
-                }
-            }
+        // Add tile layer
+        L.tileLayer(this.tileServerUrl, {
+            minZoom: MIN_ZOOM,
+            attribution: this.tileServerAttribution,
+            unloadInvisibleTiles: true
         }).addTo(this.map);
 
-        // FILTER POLYGONS **AFTER** shapefile is loaded AND markers are rendered
-        if (this.markers && this.markers.length > 0) {
-            this.filterPolygons();
+        // Create a marker layer group to hold all markers
+        this.markerLayer = L.layerGroup().addTo(this.map);
+
+        // Render markers if they exist
+        if (this.markersExist) {
+            this.renderMarkers();
         }
 
-        if (this.autoFitBounds) {
-            const bounds = this.geoJsonLayer.getBounds();
-            if (bounds.isValid()) {
-                this.map.fitBounds(bounds);
-            }
-        }
-    } catch (error) {
-        console.error('Error loading or parsing shapefile:', error);
+        // Render shapefile, and THEN filter
+        await this.renderShapefile();
+
+        // Dispatch custom event to notify the map is initialized
+        this.dispatchEvent(new CustomEvent(CUSTOM_EVENT_INIT, { detail: this.map }));
     }
-}
+
+    renderMarkers() {
+        // Clear existing markers
+        if (this.markerLayer) {
+            this.markerLayer.clearLayers();
+        }
+
+        // Add new markers
+        this.markers.forEach(marker => {
+            const leafletMarker = L.marker([marker.lat, marker.lng])
+                .bindPopup(marker.popup);
+            
+            leafletMarker.addTo(this.markerLayer);
+        });
+    }
+
+    async renderShapefile() {
+        try {
+            const shpfile = SCHOOLDISTRICTS_ZIP;
+            const response = await fetch(shpfile);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
+            }
+
+            const arrayBuffer = await response.arrayBuffer();
+            const geojson = await shp(arrayBuffer);
+
+            // Create a separate layer group for labels
+            this.labelLayer = L.layerGroup().addTo(this.map);
+
+            // Add GeoJSON to the map with styles - initially hide all polygons
+            this.geoJsonLayer = L.geoJSON(geojson, {
+                style: function(feature) {
+                    return {
+                        color: '#3388ff',
+                        weight: 2,
+                        opacity: 0,
+                        fillOpacity: 0,
+                        fillColor: '#3388ff'
+                    };
+                },
+                onEachFeature: (feature, layer) => {
+                    if (feature.properties) {
+                        const labelText = feature.properties.NAME;
+                        const centroid = layer.getBounds().getCenter();
+
+                        // Add label to the separate label layer
+                        const label = L.marker(centroid, {
+                            icon: L.divIcon({
+                                className: 'shapefile-label',
+                                html: labelText,
+                                iconSize: [100, 20]
+                            })
+                        }).addTo(this.labelLayer);
+
+                        layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
+                    }
+                }
+            }).addTo(this.map);
+
+            // Filter polygons after shapefile is loaded and markers are rendered
+            if (this.markers && this.markers.length > 0) {
+                this.filterPolygons();
+            }
+
+            if (this.autoFitBounds) {
+                const bounds = this.geoJsonLayer.getBounds();
+                if (bounds.isValid()) {
+                    this.map.fitBounds(bounds);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading or parsing shapefile:', error);
+        }
+    }
 
     generatePopupContent(properties) {
         let content = '';
@@ -166,41 +192,77 @@ async renderShapefile() {
         return content;
     }
 
-checkPolygonForMarkers(layer) {
-    if (!this.markerLayer) return false;
-
-    let hasMarkerInside = false;
-    this.markerLayer.eachLayer(marker => {
-        if (hasMarkerInside) return; // Skip if we already found a marker
-        const markerLatLng = marker.getLatLng();
-        console.log('markerLatLng', markerLatLng);  //DEBUG
-        console.log('layer.getBounds()', layer.getBounds()); //DEBUG
-        if (layer.getBounds().contains(markerLatLng) && layer.contains(markerLatLng)) {
-            hasMarkerInside = true;
-        }
-    });
-    return hasMarkerInside;
-}
-
-
-filterPolygons() {
-    if (!this.geoJsonLayer || !this.markerLayer) return;
-    
-    this.geoJsonLayer.eachLayer(layer => {
-        if (layer.feature && layer.feature.geometry.type.includes('Polygon')) {
-            const shouldShow = this.checkPolygonForMarkers(layer);
+    checkPolygonForMarkers(layer) {
+        if (!this.markerLayer) return false;
+        
+        let hasMarkerInside = false;
+        const layerBounds = layer.getBounds();
+        
+        this.markerLayer.eachLayer(marker => {
+            if (hasMarkerInside) return; // Skip if we already found a marker
             
-            layer.setStyle({
-                opacity: shouldShow ? 1 : 0,
-                fillOpacity: shouldShow ? 0.5 : 0,
-                pointerEvents: shouldShow ? 'auto' : 'none'
+            const markerLatLng = marker.getLatLng();
+            
+            // First check if marker is within the bounds (faster check)
+            if (layerBounds.contains(markerLatLng)) {
+                // Then do the more precise polygon containment check
+                try {
+                    // For polygons, we need to check if the point is inside
+                    if (layer.contains(markerLatLng)) {
+                        hasMarkerInside = true;
+                    }
+                } catch (e) {
+                    // Some layers might not support contains method
+                    console.warn('Layer does not support contains method:', e);
+                }
+            }
+        });
+        
+        return hasMarkerInside;
+    }
+
+    filterPolygons() {
+        if (!this.geoJsonLayer || !this.markerLayer) return;
+        
+        this.geoJsonLayer.eachLayer(layer => {
+            if (layer.feature && layer.feature.geometry && 
+                layer.feature.geometry.type && 
+                layer.feature.geometry.type.includes('Polygon')) {
+                
+                const shouldShow = this.checkPolygonForMarkers(layer);
+                
+                // Update the style to show or hide the polygon
+                layer.setStyle({
+                    opacity: shouldShow ? 1 : 0,
+                    fillOpacity: shouldShow ? 0.2 : 0,
+                    pointerEvents: shouldShow ? 'auto' : 'none'
+                });
+            }
+        });
+        
+        // Update labels visibility to match polygons
+        if (this.labelLayer) {
+            this.labelLayer.eachLayer(label => {
+                const labelPos = label.getLatLng();
+                let showLabel = false;
+                
+                // Check if this label's position is within a visible polygon
+                this.geoJsonLayer.eachLayer(polygonLayer => {
+                    if (showLabel) return;
+                    
+                    if (polygonLayer.options && 
+                        polygonLayer.options.opacity > 0 && 
+                        polygonLayer.getBounds().contains(labelPos)) {
+                        showLabel = true;
+                    }
+                });
+                
+                // Set label visibility
+                const iconEl = label.getElement();
+                if (iconEl) {
+                    iconEl.style.display = showLabel ? 'block' : 'none';
+                }
             });
-            
-            // For complex polygons, might need to redraw
-            if (layer.redraw) layer.redraw();
         }
-    });
-}
-
-    
+    }
 }
