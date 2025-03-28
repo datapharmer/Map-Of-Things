@@ -26,7 +26,7 @@ export default class MapOfThingsMap extends LightningElement {
     @api autoFitBounds;
 
     // The markers property is set by a parent or sibling component.
-    // These marker objects (with keys "lat" and "lng") will be used for filtering polygons.
+    // These marker objects (with keys "lat" and "lng") will be used for filtering shapes.
     @api
     get markers() {
         return this._markers;
@@ -34,7 +34,6 @@ export default class MapOfThingsMap extends LightningElement {
     set markers(newMarkers) {
         if (newMarkers && newMarkers.length >= 0) {
             this._markers = [...newMarkers];
-            // Re-run filtering when markers are updated.
             if (this.geoJsonLayer) {
                 this.filterPolygons();
             }
@@ -47,7 +46,6 @@ export default class MapOfThingsMap extends LightningElement {
 
     async connectedCallback() {
         try {
-            // Load external JS and CSS libraries.
             await Promise.all([
                 loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
                 loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
@@ -69,24 +67,17 @@ export default class MapOfThingsMap extends LightningElement {
             tap: false
         }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);
 
-        // Add the tile layer.
         L.tileLayer(this.tileServerUrl, {
             minZoom: MIN_ZOOM,
             attribution: this.tileServerAttribution,
             unloadInvisibleTiles: true
         }).addTo(this.map);
 
-        // Note: Duplicate marker creation is removed here.
-        // It is assumed that a separate markers component is adding marker icons to the map,
-        // and filtering uses the marker data stored in this._markers.
-
         // Create a dedicated layer for shape labels.
         this.labelLayer = L.layerGroup().addTo(this.map);
 
-        // Render the shapefile layer.
         await this.renderShapefile();
 
-        // Dispatch an event to signal that the map is fully initialized.
         this.dispatchEvent(new CustomEvent(CUSTOM_EVENT_INIT, { detail: this.map }));
     }
 
@@ -111,26 +102,78 @@ export default class MapOfThingsMap extends LightningElement {
                 },
                 onEachFeature: (feature, layer) => {
                     if (feature.properties) {
-                        // Bind a popup showing all properties.
                         layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
-                        
-                        // Compute the polygon centroid.
-                        const centroid = layer.getBounds().getCenter();
 
-                        // Offset the label position so it does not overlap with markers.
-                        // Convert the centroid to layer point, shift upward by 20 pixels.
-                        const offsetPoint = this.map.latLngToLayerPoint(centroid);
-                        offsetPoint.y = offsetPoint.y - 20; // Adjust the Y offset as needed.
-                        const labelLatLng = this.map.layerPointToLatLng(offsetPoint);
+                        // Compute the polygon's bounds center.
+                        const boundsCenter = layer.getBounds().getCenter();
 
-                        // Create a label marker with the offset position.
+                        // Start with a default label position as the bounds center.
+                        let labelLatLng = boundsCenter;
+
+                        // Find all markers (from the _markers array) that lie inside this polygon.
+                        let insideMarkers = [];
+                        if (this._markers && this._markers.length > 0) {
+                            this._markers.forEach(m => {
+                                const pt = L.latLng(m.lat, m.lng);
+                                if (layer.getBounds().contains(pt) && this.pointInPolygon(pt, layer)) {
+                                    insideMarkers.push(pt);
+                                }
+                            });
+                        }
+
+                        // If there are markers inside the polygon, offset the label away from them.
+                        if (insideMarkers.length > 0) {
+                            let sumLat = 0, sumLng = 0;
+                            insideMarkers.forEach(pt => {
+                                sumLat += pt.lat;
+                                sumLng += pt.lng;
+                            });
+                            let avgMarker = L.latLng(sumLat / insideMarkers.length, sumLng / insideMarkers.length);
+                            
+                            // Compute the vector in layer coordinates from the average marker point to the bounds center.
+                            const centerPoint = this.map.latLngToLayerPoint(boundsCenter);
+                            const markerPoint = this.map.latLngToLayerPoint(avgMarker);
+                            let vector = {
+                                x: centerPoint.x - markerPoint.x,
+                                y: centerPoint.y - markerPoint.y
+                            };
+                            let len = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
+                            // If the markers and center are at the same point, choose a default upward offset.
+                            if (len === 0) {
+                                vector = { x: 0, y: -20 };
+                            } else {
+                                // Normalize and then scale to 20 pixels.
+                                vector.x = (vector.x / len) * 20;
+                                vector.y = (vector.y / len) * 20;
+                            }
+                            const offsetPoint = L.point(centerPoint.x + vector.x, centerPoint.y + vector.y);
+                            let candidate = this.map.layerPointToLatLng(offsetPoint);
+                            // Use the candidate if it lies inside the polygon.
+                            if (this.pointInPolygon(candidate, layer)) {
+                                labelLatLng = candidate;
+                            } else {
+                                labelLatLng = boundsCenter;
+                            }
+                        } else {
+                            // If no markers inside, offset slightly upward by default.
+                            const centerPoint = this.map.latLngToLayerPoint(boundsCenter);
+                            const offsetPoint = L.point(centerPoint.x, centerPoint.y - 20);
+                            let candidate = this.map.layerPointToLatLng(offsetPoint);
+                            if (this.pointInPolygon(candidate, layer)) {
+                                labelLatLng = candidate;
+                            } else {
+                                labelLatLng = boundsCenter;
+                            }
+                        }
+
+                        // Create the label marker with updated (bold) styling.
+                        // The HTML uses inline CSS so that the text appears more visible.
                         const labelText = feature.properties.NAME;
                         layer.myLabel = L.marker(labelLatLng, {
                             icon: L.divIcon({
+                                html: `<span style="font-weight: bold; color: black; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 3px;">${labelText}</span>`,
                                 className: 'shapefile-label',
-                                html: labelText,
                                 iconSize: [100, 20],
-                                // Optionally, adjust iconAnchor if further tweaking is needed:
                                 iconAnchor: [50, 0]
                             })
                         });
@@ -138,7 +181,6 @@ export default class MapOfThingsMap extends LightningElement {
                 }
             }).addTo(this.map);
 
-            // Filter the polygons based on the marker data.
             if (this.markers && this.markers.length > 0) {
                 this.filterPolygons();
             }
@@ -165,27 +207,7 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
     /**
-     * Checks if the provided polygon layer contains at least one marker.
-     * It uses the _markers array (set via the markers API property) to determine if any marker's
-     * coordinates lie within the polygon.
-     */
-    checkPolygonForMarkers(polygonLayer) {
-        if (!this._markers || this._markers.length === 0) {
-            return false;
-        }
-        let hasMarkerInside = false;
-        this._markers.forEach(markerData => {
-            const markerLatLng = L.latLng(markerData.lat, markerData.lng);
-            // First check using the polygon’s bounding box.
-            if (polygonLayer.getBounds().contains(markerLatLng) && this.pointInPolygon(markerLatLng, polygonLayer)) {
-                hasMarkerInside = true;
-            }
-        });
-        return hasMarkerInside;
-    }
-
-    /**
-     * Determines if a given point is inside a polygon using the standard ray-casting algorithm.
+     * Checks whether a given point is inside a polygon using the standard ray-casting algorithm.
      */
     pointInPolygon(point, polygonLayer) {
         const latlngs = polygonLayer.getLatLngs();
@@ -207,10 +229,7 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
     /**
-     * Loop over each polygon from the GeoJSON layer. If a polygon contains
-     * at least one marker (based on the coordinates passed via the markers property),
-     * adjust the polygon style to be visible and add its label marker.
-     * Otherwise, hide the polygon and remove its label from the label layer.
+     * For every polygon in the GeoJSON layer, set its style and add (or remove) its label marker based on whether it contains markers.
      */
     filterPolygons() {
         if (!this.geoJsonLayer) {
@@ -227,7 +246,6 @@ export default class MapOfThingsMap extends LightningElement {
                 if (layer.redraw) {
                     layer.redraw();
                 }
-                // Show or hide the label marker based on the polygon's visibility.
                 if (layer.myLabel) {
                     if (shouldShow) {
                         if (!layer.myLabel._map) {
@@ -241,5 +259,22 @@ export default class MapOfThingsMap extends LightningElement {
                 }
             }
         });
+    }
+
+    /**
+     * Check if a polygon layer contains at least one marker from the _markers array.
+     */
+    checkPolygonForMarkers(polygonLayer) {
+        if (!this._markers || this._markers.length === 0) {
+            return false;
+        }
+        let hasMarkerInside = false;
+        this._markers.forEach(markerData => {
+            const markerLatLng = L.latLng(markerData.lat, markerData.lng);
+            if (polygonLayer.getBounds().contains(markerLatLng) && this.pointInPolygon(markerLatLng, polygonLayer)) {
+                hasMarkerInside = true;
+            }
+        });
+        return hasMarkerInside;
     }
 }
