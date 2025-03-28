@@ -1,44 +1,75 @@
 import { LightningElement, api } from 'lwc';
-import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
-import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
 import SCHOOLDISTRICTS_ZIP from '@salesforce/resourceUrl/schooldistricts';
 
+// Static resource base URL for LeafletJS.
+// (Assumes your static resource for LeafletJS contains all files at its root.)
+const LEAFLET_BASE = '/leafletjs'; // do not include trailing slash
+
+// Relative URLs for each library file.
 const LEAFLET_CSS_URL       = '/leaflet.css';
 const LEAFLET_JS_URL        = '/leaflet.js';
 const LEAFLETADDON_JS_URL   = '/leafletjs_marker_rotate_addon.js';
-const SHPFILE_JS_URL        = '/leaflet.shpfile.js';
-const SHP_JS_URL            = '/shp.js';
 const CATILINE_JS_URL       = '/catiline.js';
+const SHP_JS_URL            = '/shp.js';
+const SHPFILE_JS_URL        = '/leaflet.shpfile.js';
+
 const MIN_ZOOM              = 2;
 const FIT_BOUNDS_PADDING    = [20, 20];
 const MAP_CONTAINER         = 'div.inner-map-container';
 const CUSTOM_EVENT_INIT     = 'init';
 
-/**
- * Polls for a property (by key) on window until it is defined,
- * or until the maximum wait time has elapsed.
- *
- * @param {string} propName - The property name to poll for (e.g., 'L')
- * @param {number} maxWait - Maximum time (ms) to wait (default: 5000 ms)
- * @param {number} interval - Poll interval in ms (default: 50 ms)
- * @returns {Promise} Resolves when window[propName] is defined.
- */
-function waitUntilDefined(propName, maxWait = 5000, interval = 50) {
+// ---
+// Instead of using platformResourceLoader's loadScript/loadStyle,
+// we implement our own loader to force sequential loading in order,
+// which appears to help Firefox reliably set the global.
+
+function loadExternalCSS(url) {
     return new Promise((resolve, reject) => {
-        const check = () => {
-            if (window[propName] !== undefined) {
-                resolve(window[propName]);
-            } else {
-                maxWait -= interval;
-                if (maxWait <= 0) {
-                    reject(new Error(`${propName} is not defined after waiting`));
-                } else {
-                    setTimeout(check, interval);
-                }
-            }
-        };
-        check();
+        if (document.querySelector(`link[href="${url}"]`)) {
+            resolve();
+            return;
+        }
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = url;
+        link.onload = () => resolve();
+        link.onerror = () => reject(new Error(`Failed to load CSS: ${url}`));
+        document.head.appendChild(link);
     });
+}
+
+function loadExternalScript(url) {
+    return new Promise((resolve, reject) => {
+        // Avoid duplicate loading.
+        if (document.querySelector(`script[src="${url}"]`)) {
+            // If already present assume it's loaded.
+            resolve();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = url;
+        script.type = 'text/javascript';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
+        document.body.appendChild(script);
+    });
+}
+
+// Load all Leaflet-related resources sequentially
+async function loadLeafletResources() {
+    // First load the CSS.
+    await loadExternalCSS(LEAFLET_BASE + LEAFLET_CSS_URL);
+    // Then the core Leaflet JS.
+    await loadExternalScript(LEAFLET_BASE + LEAFLET_JS_URL);
+    // Then the addon and dependent scripts in order.
+    await loadExternalScript(LEAFLET_BASE + LEAFLETADDON_JS_URL);
+    await loadExternalScript(LEAFLET_BASE + CATILINE_JS_URL);
+    await loadExternalScript(LEAFLET_BASE + SHP_JS_URL);
+    await loadExternalScript(LEAFLET_BASE + SHPFILE_JS_URL);
+    // At this point window.L should be defined.
+    if (!window.L) {
+        throw new Error('Leaflet did not attach to window');
+    }
 }
 
 export default class MapOfThingsMap extends LightningElement {
@@ -52,8 +83,8 @@ export default class MapOfThingsMap extends LightningElement {
     @api mapDefaultZoomLevel;
     @api autoFitBounds;
 
-    // The markers property (with keys "lat" and "lng") is provided externally (from another component)
-    // and is used for filtering the shapefile polygons.
+    // Markers (with "lat" and "lng") are provided externally from another component.
+    // They are used for filtering shapefile polygons.
     @api
     get markers() {
         return this._markers;
@@ -68,52 +99,46 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
     renderedCallback() {
+        // Always set the container’s height.
         this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
 
     async connectedCallback() {
         try {
-            // Load CSS and JS libraries in parallel.
-            await Promise.all([
-                loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
-                loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
-                loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
-                loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
-                loadScript(this, LEAFLET_JS + SHP_JS_URL),
-                loadScript(this, LEAFLET_JS + SHPFILE_JS_URL)
-            ]);
-
-            // Wait until Leaflet is attached to the window object.
-            await waitUntilDefined('L', 5000, 50);
+            // First load the Leaflet CSS & JS (and related libraries) sequentially.
+            await loadLeafletResources();
+            // Once the resources are loaded and window.L is defined, initialize the map.
             this.drawMap();
         } catch (error) {
-            console.error('Error loading external libraries:', error);
+            console.error('Error loading Leaflet libraries:', error);
         }
     }
 
     async drawMap() {
+        // Create the map using window.L.
         const container = this.template.querySelector(MAP_CONTAINER);
-        // Use window.L to ensure cross-browser compatibility.
         this.map = window.L.map(container, {
             zoomControl: true,
             tap: false
         }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);
 
-        // Create a new pane for labels with a high z-index and disable pointer events so markers remain clickable.
+        // Create a dedicated pane for labels.
         this.map.createPane('labelsPane');
         const labelsPane = this.map.getPane('labelsPane');
-        labelsPane.style.zIndex = 650; // Higher than standard marker panes.
-        labelsPane.style.pointerEvents = 'none';
+        labelsPane.style.zIndex = 650; // Higher than standard marker layers.
+        labelsPane.style.pointerEvents = 'none'; // Let mouse events pass through.
 
+        // Add the base tile layer.
         window.L.tileLayer(this.tileServerUrl, {
             minZoom: MIN_ZOOM,
             attribution: this.tileServerAttribution,
             unloadInvisibleTiles: true
         }).addTo(this.map);
 
-        // Create a dedicated label layer using the 'labelsPane'.
+        // Create a layer group for the shape labels in the 'labelsPane'.
         this.labelLayer = window.L.layerGroup([], { pane: 'labelsPane' }).addTo(this.map);
 
+        // Load the shapefile and add the GeoJSON layer.
         await this.renderShapefile();
 
         this.dispatchEvent(new CustomEvent(CUSTOM_EVENT_INIT, { detail: this.map }));
@@ -128,8 +153,8 @@ export default class MapOfThingsMap extends LightningElement {
             }
             const arrayBuffer = await response.arrayBuffer();
             const geojson = await shp(arrayBuffer);
-
-            // Add the GeoJSON layer with polygons hidden initially.
+    
+            // Add the GeoJSON layer with initial (hidden) styling.
             this.geoJsonLayer = window.L.geoJSON(geojson, {
                 style: function () {
                     return {
@@ -141,12 +166,12 @@ export default class MapOfThingsMap extends LightningElement {
                 onEachFeature: (feature, layer) => {
                     if (feature.properties) {
                         layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
-
-                        // Compute the polygon's bounds center.
+    
+                        // Determine a suitable label position.
                         const boundsCenter = layer.getBounds().getCenter();
                         let labelLatLng = boundsCenter;
-
-                        // Determine which markers (from _markers) lie inside this polygon.
+    
+                        // Look for markers (from _markers array) that are inside this polygon.
                         let insideMarkers = [];
                         if (this._markers && this._markers.length > 0) {
                             this._markers.forEach(m => {
@@ -156,7 +181,7 @@ export default class MapOfThingsMap extends LightningElement {
                                 }
                             });
                         }
-
+    
                         if (insideMarkers.length > 0) {
                             let sumLat = 0, sumLng = 0;
                             insideMarkers.forEach(pt => {
@@ -164,8 +189,8 @@ export default class MapOfThingsMap extends LightningElement {
                                 sumLng += pt.lng;
                             });
                             let avgMarker = window.L.latLng(sumLat / insideMarkers.length, sumLng / insideMarkers.length);
-
-                            // Compute a vector (in layer coordinates) from the average marker position to the polygon's center.
+    
+                            // Compute a vector (in layer coordinates) from the average marker location to the polygon center.
                             const centerPt = this.map.latLngToLayerPoint(boundsCenter);
                             const markerPt = this.map.latLngToLayerPoint(avgMarker);
                             let vector = {
@@ -187,7 +212,7 @@ export default class MapOfThingsMap extends LightningElement {
                                 labelLatLng = boundsCenter;
                             }
                         } else {
-                            // If there are no markers, offset slightly upward.
+                            // With no markers inside, simply try shifting upward.
                             const centerPt = this.map.latLngToLayerPoint(boundsCenter);
                             const offsetPoint = window.L.point(centerPt.x, centerPt.y - 20);
                             const candidate = this.map.layerPointToLatLng(offsetPoint);
@@ -197,9 +222,9 @@ export default class MapOfThingsMap extends LightningElement {
                                 labelLatLng = boundsCenter;
                             }
                         }
-
-                        // Create the label marker with bold and high-contrast styling.
-                        // Placing it on the 'labelsPane' ensures it appears above marker icons.
+    
+                        // Create a label marker with bold, high-contrast styling.
+                        // The marker is placed on the 'labelsPane' so it appears atop other markers.
                         const labelText = feature.properties.NAME;
                         layer.myLabel = window.L.marker(labelLatLng, {
                             pane: 'labelsPane',
@@ -214,11 +239,11 @@ export default class MapOfThingsMap extends LightningElement {
                     }
                 }
             }).addTo(this.map);
-
+    
             if (this.markers && this.markers.length > 0) {
                 this.filterPolygons();
             }
-
+    
             if (this.autoFitBounds) {
                 const bounds = this.geoJsonLayer.getBounds();
                 if (bounds.isValid()) {
@@ -229,7 +254,7 @@ export default class MapOfThingsMap extends LightningElement {
             console.error('Error loading or parsing shapefile:', error);
         }
     }
-
+    
     generatePopupContent(properties) {
         let content = '';
         for (const key in properties) {
@@ -239,16 +264,17 @@ export default class MapOfThingsMap extends LightningElement {
         }
         return content;
     }
-
+    
     /**
-     * Uses the standard ray-casting algorithm to determine if a point lies inside a polygon.
+     * Standard ray-casting algorithm.
+     * Returns true if the given point lies inside the polygon from polygonLayer.
      */
     pointInPolygon(point, polygonLayer) {
         const latlngs = polygonLayer.getLatLngs();
         if (!latlngs || !latlngs.length) {
             return false;
         }
-        // Assume a simple polygon (first coordinate set).
+        // Assume a simple polygon (the first coordinate set).
         const polygon = latlngs[0];
         let inside = false;
         const x = point.lng;
@@ -256,18 +282,15 @@ export default class MapOfThingsMap extends LightningElement {
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
             const xi = polygon[i].lng, yi = polygon[i].lat;
             const xj = polygon[j].lng, yj = polygon[j].lat;
-            const intersect = ((yi > y) !== (yj > y)) &&
-                              (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi);
-            if (intersect) {
-                inside = !inside;
-            }
+            const intersect = ((yi > y) !== (yj > y)) && (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
         }
         return inside;
     }
-
+    
     /**
-     * For each polygon in the GeoJSON layer, update its style and add (or remove) its label
-     * based on whether the polygon contains any markers (using the _markers array).
+     * For each polygon in the GeoJSON layer, update its style and show or hide its label
+     * based on whether the _markers array contains at least one point inside the polygon.
      */
     filterPolygons() {
         if (!this.geoJsonLayer) {
@@ -298,9 +321,9 @@ export default class MapOfThingsMap extends LightningElement {
             }
         });
     }
-
+    
     /**
-     * Check if a polygon layer contains at least one marker from the _markers array.
+     * Check if the polygon layer contains at least one marker from the _markers array.
      */
     checkPolygonForMarkers(polygonLayer) {
         if (!this._markers || this._markers.length === 0) {
