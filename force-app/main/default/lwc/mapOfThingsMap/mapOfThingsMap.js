@@ -25,26 +25,20 @@ export default class MapOfThingsMap extends LightningElement {
     @api mapDefaultZoomLevel;
     @api autoFitBounds;
 
-    // Markers are assumed to be rendered by a separate markers component.
-    // They are still passed in here so that we can filter the shapefile
-    // and only show polygons that contain a marker.
+    // The markers property is set by a parent or sibling component.
+    // These marker objects (with at least keys "lat" and "lng") will be used for filtering polygons.
     @api
     get markers() {
         return this._markers;
     }
     set markers(newMarkers) {
         if (newMarkers && newMarkers.length >= 0) {
-            // Simply store them; do not render duplicate marker icons here.
             this._markers = [...newMarkers];
-            // Once the shapefile is loaded, re-run filtering so label visibility can update.
+            // Re-run filtering when markers are updated.
             if (this.geoJsonLayer) {
                 this.filterPolygons();
             }
         }
-    }
-
-    get markersExist() {
-        return this._markers && this._markers.length > 0;
     }
 
     renderedCallback() {
@@ -53,7 +47,7 @@ export default class MapOfThingsMap extends LightningElement {
 
     async connectedCallback() {
         try {
-            // Load external JS and CSS libraries
+            // Load external JS and CSS libraries.
             await Promise.all([
                 loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
                 loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
@@ -82,11 +76,11 @@ export default class MapOfThingsMap extends LightningElement {
             unloadInvisibleTiles: true
         }).addTo(this.map);
 
-        // Note: We remove our internal marker creation so that duplicate markers do not appear.
-        // It is assumed that a separate markers LWC (mapOfThingsMarkers) is already adding markers to the map.
-        // But filtering of polygons will look at all markers (except our own labels) on the map.
+        // Note: Duplicate marker creation is removed here.
+        // It is assumed that a separate markers component is adding marker icons to the map,
+        // and filtering will use the marker data stored in this._markers.
 
-        // Create a dedicated layer for labels.
+        // Create a dedicated layer for shape labels.
         this.labelLayer = L.layerGroup().addTo(this.map);
 
         // Render the shapefile layer.
@@ -106,7 +100,7 @@ export default class MapOfThingsMap extends LightningElement {
             const arrayBuffer = await response.arrayBuffer();
             const geojson = await shp(arrayBuffer);
 
-            // Add the GeoJSON layer but start with all polygons hidden.
+            // Add the GeoJSON layer with all polygons hidden initially.
             this.geoJsonLayer = L.geoJSON(geojson, {
                 style: function () {
                     return {
@@ -117,11 +111,9 @@ export default class MapOfThingsMap extends LightningElement {
                 },
                 onEachFeature: (feature, layer) => {
                     if (feature.properties) {
-                        // Create the popup content.
+                        // Bind a popup showing all properties.
                         layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
-
-                        // Instead of adding the label marker immediately to the map,
-                        // we create it and store it in the layer. The label uses a divIcon.
+                        // Create a label marker but do NOT add it yet.
                         const labelText = feature.properties.NAME;
                         const centroid = layer.getBounds().getCenter();
                         layer.myLabel = L.marker(centroid, {
@@ -135,8 +127,8 @@ export default class MapOfThingsMap extends LightningElement {
                 }
             }).addTo(this.map);
 
-            // Once the shapefile is loaded, filter the polygons so that only those with a marker inside are visible.
-            if (this.markersExist) {
+            // Filter the polygons using the marker coordinates.
+            if (this.markers && this.markers.length > 0) {
                 this.filterPolygons();
             }
 
@@ -162,70 +154,58 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
     /**
-     * Check if a polygon layer (from the shapefile) contains at least one marker.
-     * Instead of using a separate marker layer, we iterate over every layer in the map.
-     * We filter out markers that are actually labels (by checking if their icon’s className contains "shapefile-label").
+     * Checks if the provided polygon layer contains at least one marker.
+     * It uses the _markers array (which is kept in sync via the markers API property)
+     * to determine if any marker's coordinates lie within the polygon.
      */
     checkPolygonForMarkers(polygonLayer) {
+        if (!this._markers || this._markers.length === 0) {
+            return false;
+        }
         let hasMarkerInside = false;
-        // Iterate over all layers on the map.
-        this.map.eachLayer(layer => {
-            if (layer instanceof L.Marker) {
-                // Check if this marker uses a divIcon with the "shapefile-label" class.
-                if (
-                    layer.options &&
-                    layer.options.icon &&
-                    layer.options.icon.options &&
-                    layer.options.icon.options.className &&
-                    layer.options.icon.options.className.includes('shapefile-label')
-                ) {
-                    // Skip label markers.
-                    return;
-                }
-                const markerLatLng = layer.getLatLng();
-                // First check the bounding box.
-                if (polygonLayer.getBounds().contains(markerLatLng) && this.pointInPolygon(markerLatLng, polygonLayer)) {
-                    hasMarkerInside = true;
-                }
+        this._markers.forEach(markerData => {
+            const markerLatLng = L.latLng(markerData.lat, markerData.lng);
+            // First check using the polygon’s bounding box.
+            if (polygonLayer.getBounds().contains(markerLatLng) && this.pointInPolygon(markerLatLng, polygonLayer)) {
+                hasMarkerInside = true;
             }
         });
         return hasMarkerInside;
     }
 
     /**
-     * Standard ray-casting algorithm to determine if a point (marker) lies inside a polygon.
+     * Determines if a given point is inside a polygon using the standard ray-casting algorithm.
      */
     pointInPolygon(point, polygonLayer) {
-        // Get the polygon’s latlngs.
         const latlngs = polygonLayer.getLatLngs();
         if (!latlngs || !latlngs.length) {
             return false;
         }
-        // For a simple polygon, assume the first set of coordinates.
+        // Assume a simple polygon (the first array of coordinates).
         const polygon = latlngs[0];
         let inside = false;
-        const x = point.lng,
-            y = point.lat;
+        const x = point.lng;
+        const y = point.lat;
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            const xi = polygon[i].lng,
-                yi = polygon[i].lat;
-            const xj = polygon[j].lng,
-                yj = polygon[j].lat;
-            const intersect = (yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+            const xi = polygon[i].lng, yi = polygon[i].lat;
+            const xj = polygon[j].lng, yj = polygon[j].lat;
+            const intersect = ((yi > y) !== (yj > y)) && (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi);
             if (intersect) inside = !inside;
         }
         return inside;
     }
 
     /**
-     * Loop through each polygon in the GeoJSON layer. For each polygon,
-     * update its style based on whether it contains a marker. Then add or remove
-     * the associated label marker accordingly.
+     * Loop over each polygon from the GeoJSON layer. If a polygon contains
+     * at least one marker (based on the coordinates passed via the markers property),
+     * adjust the polygon style to be visible and add its label marker.
+     * Otherwise hide the polygon and remove its label from the label layer.
      */
     filterPolygons() {
-        if (!this.geoJsonLayer) return;
+        if (!this.geoJsonLayer) {
+            return;
+        }
         this.geoJsonLayer.eachLayer(layer => {
-            // Only act on features that are polygons.
             if (layer.feature && layer.feature.geometry.type.includes('Polygon')) {
                 const shouldShow = this.checkPolygonForMarkers(layer);
                 layer.setStyle({
@@ -233,17 +213,16 @@ export default class MapOfThingsMap extends LightningElement {
                     fillOpacity: shouldShow ? 0.5 : 0,
                     pointerEvents: shouldShow ? 'auto' : 'none'
                 });
-                if (layer.redraw) layer.redraw();
-
-                // Now show or hide the label based on the polygon's visibility.
+                if (layer.redraw) {
+                    layer.redraw();
+                }
+                // Show or hide the label marker based on the polygon's visibility.
                 if (layer.myLabel) {
                     if (shouldShow) {
-                        // If the label is not already added, add it.
                         if (!layer.myLabel._map) {
                             layer.myLabel.addTo(this.labelLayer);
                         }
                     } else {
-                        // Remove the label from the labelLayer if it exists.
                         if (layer.myLabel._map) {
                             this.labelLayer.removeLayer(layer.myLabel);
                         }
