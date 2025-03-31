@@ -1,68 +1,64 @@
 /*
- * Modified for LWC compatibility and Firefox support
+ * Firefox-compatible Leaflet Marker Rotation Addon for LWC
+ * Handles PointerEvents and LWS constraints
  */
-(function () {
-    // Wait for Leaflet to be available
+(function() {
     function initRotateAddon(L) {
-        var _old__setPos = L.Marker.prototype._setPos;
-        
+        if (!L || !L.Marker) return;
+
+        var _oldSetPos = L.Marker.prototype._setPos;
+        var _oldUpdate = L.Marker.prototype.update;
+
         L.Marker.include({
-            _updateImg: function(i, a, s) {
-                a = L.point(s).divideBy(2)._subtract(L.point(a));
-                var transform = '';
-                transform += ' translate(' + -a.x + 'px, ' + -a.y + 'px)';
-                transform += ' rotate(' + this.options.iconAngle + 'deg)';
-                transform += ' translate(' + a.x + 'px, ' + a.y + 'px)';
-                
-                // Use Leaflet's DomUtil for safer style setting
-                L.DomUtil.setStyle(i, 'transform', transform);
-                L.DomUtil.setStyle(i, '-webkit-transform', transform);
+            _updateTransform: function() {
+                if (!this._icon || !this.options.iconAngle) return;
+
+                var icon = this.options.icon || new L.Icon.Default();
+                var anchor = icon.options.iconAnchor || [12, 41];
+                var size = icon.options.iconSize || [25, 41];
+                var center = L.point(size).divideBy(2)._subtract(L.point(anchor));
+
+                var transform = [
+                    'translate(' + -center.x + 'px, ' + -center.y + 'px)',
+                    'rotate(' + this.options.iconAngle + 'deg)',
+                    'translate(' + center.x + 'px, ' + center.y + 'px)'
+                ].join(' ');
+
+                L.DomUtil.setStyle(this._icon, 'transform', transform);
+                L.DomUtil.setStyle(this._icon, '-webkit-transform', transform);
+                L.DomUtil.setStyle(this._icon, '-ms-transform', transform);
             },
 
-            setIconAngle: function (iconAngle) {
-                this.options.iconAngle = iconAngle;
+            setIconAngle: function(angle) {
+                this.options.iconAngle = angle;
                 if (this._map) {
-                    this.update();
+                    this._updateTransform();
                 }
+                return this;
             },
 
-            _setPos: function (pos) {
-                if (this._icon) {
-                    L.DomUtil.setStyle(this._icon, 'transform', '');
-                }
-                if (this._shadow) {
-                    L.DomUtil.setStyle(this._shadow, 'transform', '');
-                }
+            _setPos: function(pos) {
+                _oldSetPos.call(this, pos);
+                this._updateTransform();
+            },
 
-                _old__setPos.apply(this, [pos]);
-
-                if (this.options.iconAngle) {
-                    var defaultIcon = new L.Icon.Default();
-                    var a = this.options.icon.options.iconAnchor || defaultIcon.options.iconAnchor;
-                    var s = this.options.icon.options.iconSize || defaultIcon.options.iconSize;
-                    
-                    if (this._icon) {
-                        this._updateImg(this._icon, a, s);
-                    }
-                    if (this._shadow && this.options.icon.options.shadowAnchor) {
-                        a = this.options.icon.options.shadowAnchor;
-                        s = this.options.icon.options.shadowSize;
-                        this._updateImg(this._shadow, a, s);
-                    }
-                }
+            update: function() {
+                _oldUpdate.call(this);
+                this._updateTransform();
+                return this;
             }
         });
     }
 
-    // Check for Leaflet availability
+    // Handle different loading scenarios
     if (typeof L !== 'undefined') {
         initRotateAddon(L);
     } else {
-        // Fallback for LWC
-        window.addEventListener('DOMContentLoaded', function() {
+        var checkL = setInterval(function() {
             if (typeof L !== 'undefined') {
+                clearInterval(checkL);
                 initRotateAddon(L);
             }
-        });
+        }, 100);
     }
 })();
