@@ -1,65 +1,66 @@
 /*
- * Revised Marker Rotate Add-on – CSS-Only Rotation
- *
- * This version avoids computing offset translations so that it does not trigger
- * Lightning Web Security errors (such as “Cannot access rangeParent”) in Firefox.
- * It simply sets the transform origin to the center (50% 50%) and rotates the icon.
- *
- * Note: This solution assumes that your custom marker icons have their anchor
- * point centered (or that a small visual displacement is acceptable).
+ * Modified Leaflet Marker Rotation Addon for Salesforce LWC
+ * Works within Lightning Web Security constraints
  */
 (function () {
-    // Only proceed if Leaflet (L) is defined.
-    if (!window.L) {
-        return;
-    }
+    if (typeof L === 'undefined') return;
     
-    // Cache the original _setPos method.
-    var originalSetPos = L.Marker.prototype._setPos;
+    // Store original _setPos method
+    var _old__setPos = L.Marker.prototype._setPos;
     
     L.Marker.include({
-        // Overridden _setPos that applies a simple rotation transform.
-        _setPos: function (pos) {
-            // Remove any previously set transform so that we start fresh.
-            if (this._icon) {
-                this._icon.style.removeProperty('transform');
-            }
-            if (this._shadow) {
-                this._shadow.style.removeProperty('transform');
-            }
-            
-            // Call the original _setPos.
-            originalSetPos.call(this, pos);
-            
-            // If an icon angle is specified, apply a CSS transform that rotates
-            // the marker about its center.
-            if (this.options.iconAngle && this._icon) {
-                try {
-                    this._icon.style.setProperty('transform-origin', '50% 50%');
-                    this._icon.style.setProperty('transform', 'rotate(' + this.options.iconAngle + 'deg)');
-                } catch (e) {
-                    // In case of errors, log them (for debugging) but do not break execution.
-                    console.error('Error setting icon rotation:', e);
-                }
-            }
-            
-            // Do the same for the shadow, if one exists and shadow size is defined.
-            if (this.options.iconAngle && this._shadow && this.options.icon && this.options.icon.options.shadowSize) {
-                try {
-                    this._shadow.style.setProperty('transform-origin', '50% 50%');
-                    this._shadow.style.setProperty('transform', 'rotate(' + this.options.iconAngle + 'deg)');
-                } catch (e) {
-                    console.error('Error setting shadow rotation:', e);
-                }
+        _updateImg: function(i, a, s) {
+            try {
+                a = L.point(s).divideBy(2)._subtract(L.point(a));
+                var transform = '';
+                transform += ' translate(' + -a.x + 'px, ' + -a.y + 'px)';
+                transform += ' rotate(' + this.options.iconAngle + 'deg)';
+                transform += ' translate(' + a.x + 'px, ' + a.y + 'px)';
+                
+                // Use L.DomUtil.setTransform which is LWS-compliant
+                L.DomUtil.setTransform(i, transform);
+            } catch(e) {
+                console.warn('Marker rotation error:', e);
             }
         },
-        
-        // Public method to update the rotation angle.
-        setIconAngle: function (angle) {
-            this.options.iconAngle = angle;
+
+        setIconAngle: function (iconAngle) {
+            this.options.iconAngle = iconAngle;
             if (this._map) {
                 this.update();
             }
+        },
+
+        _setPos: function (pos) {
+            try {
+                // Reset transforms using L.DomUtil
+                if (this._icon) {
+                    L.DomUtil.setTransform(this._icon, '');
+                }
+                if (this._shadow) {
+                    L.DomUtil.setTransform(this._shadow, '');
+                }
+
+                // Call original _setPos
+                _old__setPos.apply(this, [pos]);
+
+                if (this.options.iconAngle) {
+                    var defaultIcon = new L.Icon.Default();
+                    var a = this.options.icon.options.iconAnchor || defaultIcon.options.iconAnchor;
+                    var s = this.options.icon.options.iconSize || defaultIcon.options.iconSize;
+                    
+                    if (this._icon) {
+                        this._updateImg(this._icon, a, s);
+                    }
+                    if (this._shadow && this.options.icon.options.shadowAnchor) {
+                        a = this.options.icon.options.shadowAnchor;
+                        s = this.options.icon.options.shadowSize;
+                        this._updateImg(this._shadow, a, s);
+                    }
+                }
+            } catch(e) {
+                console.warn('Marker position error:', e);
+            }
         }
     });
-}());
+})();
