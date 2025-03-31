@@ -1,284 +1,91 @@
 import { LightningElement, api } from 'lwc';
 
-const EVENT_ZOOM_END = 'zoomend';
-const ROTATION_LEFT = 'left';
-const ROTATION_RIGHT = 'right';
-
 export default class MapOfThingsMarkers extends LightningElement {
+    leafletMarkers = {};
 
-    leafletMarker = {};
-    isMoving = false;
-    initedLayerControl = false;
-    layerControl;
-    layerGroup = {};
-
-    @api iconSizeX;
+    @api iconSizeX;      // from component configuration
     @api iconSizeY;
-    @api useCustomMarker;
-    @api useGrouping;
-    @api markerZoomWithMap;
-    @api markerRotate;
-    @api moveDuration;
-    @api map;
-    @api
-    get markers(){
-        return this.leafletMarker;
-    }
-    set markers(newMarkers) {
-        if (newMarkers && newMarkers.length >= 0){
-            const allMarker = {};
-            newMarkers.forEach(newMarker => {
-                allMarker[newMarker.id] = {
-                    old: false,
-                    new: true,
-                    marker: newMarker
-                };
-            });
-            Object.keys(this.leafletMarker).forEach(currentMarkerId => {
-                if (allMarker.hasOwnProperty(currentMarkerId)) {
-                    allMarker[currentMarkerId].old = true;
-                } else {
-                    allMarker[currentMarkerId] = {
-                        old: true,
-                        new: false
-                    };
-                }
-            });
-            Object.keys(allMarker).forEach(markerId => {
-                const target = allMarker[markerId];
-                const targetMarker = target.marker;
-                if (!target.old && target.new) {
-                    this.createMarker(targetMarker);
-                } else if (target.old && target.new) {
-                    this.changeMarker(targetMarker);
-                } else if (target.old && !target.new) {
-                    this.removeMarker(markerId);
-                }
-            });
-            if (this.markerZoomWithMap && this.useCustomMarker && !this.doneListenMapZoom){
-                this.listenMapZoom();
-            }
-        }
-    }
-    
-    listenMapZoom(){
-        this.map.on(EVENT_ZOOM_END, () => {
-            this.zoomMarker();
+    @api map;            // Leaflet map instance
+
+    /**
+     * Creates a new rotating marker.
+     * Instead of using a patched marker, we build a custom marker using L.divIcon and CSS transform.
+     */
+    createRotatingMarker(newMarker) {
+        const { id, lat, lng, icon, popup } = newMarker;
+        // Use a divIcon that wraps an img tag; we set the image’s style to include a rotation
+        const html = `<img src="${icon}" 
+                          style="width:${this.iconSizeX}px; height:${this.iconSizeY}px; 
+                                 transform:rotate(0deg); 
+                                 transition: transform 0.5s;"
+                          alt="marker icon"/>`;
+        const customIcon = L.divIcon({
+            html,
+            className: '', // remove any default marker class if needed
+            iconSize: [this.iconSizeX, this.iconSizeY],
+            iconAnchor: [this.iconSizeX/2, this.iconSizeY/2],
+            popupAnchor: [0, -(this.iconSizeY * 0.25)]
         });
-        this.doneListenMapZoom = true;
-    }
-    initLayerControl(){
-        this.layerControl = L.control.layers(null, {}, {
-            collapsed: false, sortLayers: true
-        }).addTo(this.map);
-        this.initedLayerControl = true;
-    }    
-    initLayerGroup(newMarker){
-        if (!this.useGrouping) return;
-        const markerId = newMarker.id;
-        const groupName = newMarker.group;
-        this.addToLayerGroup(markerId, groupName);
-    }
-    updateLayerGroup(newMarker){
-        if (!this.useGrouping) return;
-        const markerId = newMarker.id;
-        const newGroupName = newMarker.group;
-        const currentGroupName = this.leafletMarker[markerId].group;
-        if (!(newGroupName != currentGroupName)) return;
-        this.removeFromLayerGroup(markerId, currentGroupName);
-        this.addToLayerGroup(markerId, newGroupName);
-        this.leafletMarker[markerId].group = newGroupName;
-    }
-    addToLayerGroup(markerId, groupName){
-        if (!this.initedLayerControl){
-            this.initLayerControl();
-        }
-        if (!this.layerGroup.hasOwnProperty(groupName)){
-            this.layerGroup[groupName] = L.layerGroup().addTo(this.map);
-        }
-        this.leafletMarker[markerId].marker.addTo(this.layerGroup[groupName]);
-        this.updateLayerControl(groupName);
-    }
-    removeFromLayerGroup(markerId, groupName){
-        if (!this.useGrouping) return;
-        this.leafletMarker[markerId].marker.removeFrom(this.layerGroup[groupName]);
-        this.updateLayerControl(groupName);
-    }
-    updateLayerControl(groupName){
-        const itemCount = this.layerGroup[groupName].getLayers().length;
-        if (itemCount >= 0 && groupName && groupName.length > 0){
-            this.layerControl.removeLayer(this.layerGroup[groupName]);
-            this.layerControl.addOverlay(this.layerGroup[groupName], `${groupName} (${itemCount})`);
-        }
-    }
-    removeMarker(markerId) {
-        this.removeMarkerOutOfLayerGroup(markerId);
-        this.map.removeLayer(this.leafletMarker[markerId].marker);
-        delete this.leafletMarker[markerId];
-    }
-    removeMarkerOutOfLayerGroup(markerId) {
-        const groupName = this.leafletMarker[markerId].group;
-        this.removeFromLayerGroup(markerId, groupName);
-    }
-    createMarker(newMarker) {
-        const { id, lat, lng, icon, group } = newMarker;
-        const imgurl = icon;
-        const angle = 0;
-        const popup = L.popup().setContent(newMarker.popup);
-        const marker = this.useCustomMarker ? L.marker([lat, lng], {
-            icon: this.getMarkerIcon(imgurl),
-            iconAngle: 0
-        }): L.marker([lat, lng]);
+        // Create the marker using custom icon.
+        const marker = L.marker([lat, lng], { icon: customIcon });
         marker.addTo(this.map).bindPopup(popup);
-        this.leafletMarker[id] = { lat, lng, popup, angle, imgurl, marker, group };
-        this.initLayerGroup(newMarker);
+        // Store the marker with its current angle (=0)
+        this.leafletMarkers[id] = { marker, angle: 0 };
     }
-    changeMarker(newMarker) {
-        this.updatePopup(newMarker);
-        this.updateLayerGroup(newMarker);
-        this.updateMarkerIcon(newMarker);
-        this.moveMarker(newMarker);
-    }
-    updatePopup(newMarker){
-        const markerId = newMarker.id;
-        const currentPopup = this.leafletMarker[markerId].popup;
-        const newPopup = newMarker.popup;
-        if (newPopup != currentPopup){
-            this.leafletMarker[markerId].marker.setPopupContent(newPopup);
-            this.leafletMarker[markerId].popup = newPopup;
+
+    /**
+     * When marker location must change and/or rotation should animate,
+     * update the marker position and adjust the rotation by updating the inline style.
+     */
+    updateRotatingMarker(newMarker) {
+        const { id, lat, lng, icon, popup } = newMarker;
+        const targetData = this.leafletMarkers[id];
+        if (!targetData) {
+            // Marker does not exist yet, so create one.
+            this.createRotatingMarker(newMarker);
+            return;
         }
-    }
-    updateMarkerIcon(newMarker){
-        if (!this.useCustomMarker) return;
-        const markerId = newMarker.id;
-        const currentImgUrl = this.leafletMarker[markerId].imgurl;
-        const newImgUrl = newMarker.icon;
-        if (newImgUrl != currentImgUrl){
-            this.leafletMarker[markerId].marker.setIcon(this.getMarkerIcon(newImgUrl));
-            this.leafletMarker[markerId].imgurl = newImgUrl;
+        const { marker, angle: currentAngle } = targetData;
+        // Update position (if moved a significant amount)
+        marker.setLatLng([lat, lng]);
+        // Compute the new required angle based on your application logic.
+        // For example, calculate an angle (in degrees) from current position to new position.
+        // (The actual calculation may be more complex; in our sample we simply add 30deg)
+        const newAngle = (currentAngle + 30) % 360;
+        // Retrieve the marker’s DOM element (the img tag inside the divIcon)
+        // Note: marker.getElement() returns the outer container; query the <img>.
+        const markerEl = marker.getElement()?.querySelector('img');
+        if (markerEl) {
+            markerEl.style.transform = `rotate(${newAngle}deg)`;
         }
-    }
-    zoomMarker(){
-        Object.keys(this.leafletMarker).forEach(markerId => {
-            const targetMarker = this.leafletMarker[markerId];
-            const imgUrl = targetMarker.imgurl;
-            targetMarker.marker.setIcon(this.getMarkerIcon(imgUrl));
-        });
-    }
-    moveMarker(newMarker) {
-        const markerId = newMarker.id;
-        const currentMarker = this.leafletMarker[markerId];
-        const nowlat = currentMarker.lat;
-        const nowlng = currentMarker.lng;
-        const newlat = newMarker.lat;
-        const newlng = newMarker.lng;
-        const distance = this.getDistance(nowlat, nowlng, newlat, newlng);
-        if (!(distance > 3)) return;
-        const currentAngle = currentMarker.angle;
-        const {diff, rot} = this.getAngleDiff(currentAngle, nowlat, nowlng, newlat, newlng);
-        const startTime = new Date().getTime(); 
-        const baseLat = parseFloat(nowlat);
-        const baseLng = parseFloat(nowlng);
-        const baseAngle = currentAngle;
-        const targetLat = parseFloat(newlat);
-        const targetLng = parseFloat(newlng);
-        const targetAngleDiff = diff;
-        const targetAngleRotation = rot;
-        this.leafletMarker[markerId] = {...currentMarker, startTime, baseLat, baseLng, baseAngle, targetLat, targetLng, targetAngleDiff, targetAngleRotation};
-        if (!this.isMoving) this.startAnimation();
-    }
-    startAnimation() {
-        L.Util.requestAnimFrame(() => {
-            this.isMoving = true;
-            this.animate();
-        }, this, true);
-    }
-    animate() {
-        const duration = this.moveDuration;
-        let doNext = false;
-        Object.keys(this.leafletMarker).forEach(markerId => {
-            const targetMarker = this.leafletMarker[markerId];
-            const nowTime = new Date().getTime();
-            const startTime = targetMarker.startTime;
-            const elapseTime = nowTime - startTime;
-            if (elapseTime < duration) {
-                const timestate = elapseTime / duration;
-                const { currentLat, currentLng, currentAngle } = this.getLatLngAngle(targetMarker, timestate);
-                this.leafletMarker[markerId].marker.setLatLng(L.latLng(currentLat, currentLng));
-                this.leafletMarker[markerId].marker.setIconAngle(currentAngle);
-                this.leafletMarker[markerId].lat = currentLat;
-                this.leafletMarker[markerId].lng = currentLng;
-                this.leafletMarker[markerId].angle = currentAngle;
-                doNext = true;
-            }
-        });
-        if (doNext) {
-            L.Util.requestAnimFrame(() => {
-                this.animate();
-            }, this, true);
-        } else {
-            this.isMoving = false;
+        // If the popup has changed, update it.
+        if (popup && marker.getPopup().getContent() !== popup) {
+            marker.setPopupContent(popup);
         }
+        // Save the new angle
+        this.leafletMarkers[id].angle = newAngle;
     }
-    getMarkerIcon(iconImgUrl){
-        const currentZoomLevel = this.map.getZoom();
-        const factor = this.markerZoomWithMap && this.useCustomMarker ? (currentZoomLevel ** 3 / 2000): 1;
-        return L.icon({
-            iconUrl: iconImgUrl,
-            iconSize: L.point(this.iconSizeX * factor, this.iconSizeY * factor),
-            iconAnchor: L.point(this.iconSizeX * factor / 2, this.iconSizeY * factor / 2),
-            popupAnchor:  L.point(0, -(this.iconSizeY * factor / 4))
-        });
-    }
-    getLatLngAngle(marker, timestate) {
-        const {baseLat, baseLng, baseAngle, targetLat, targetLng, targetAngleDiff, targetAngleRotation} = marker;
-        const currentAngle = this.normalizeAngle(
-            targetAngleRotation === ROTATION_LEFT ? baseAngle - timestate * targetAngleDiff :
-            targetAngleRotation === ROTATION_RIGHT ? baseAngle + timestate * targetAngleDiff :
-                    0);
-        const currentLat = baseLat + timestate * (targetLat - baseLat);
-        const currentLng = baseLng + timestate * (targetLng - baseLng);
-        return { currentLat, currentLng, currentAngle };
-    }
-    normalizeAngle(angle) {
-        let ret = angle;
-        while (ret < 0) {
-            ret += 360;
-        }
-        while (ret > 360) {
-            ret -= 360;
-        }
-        return ret;
-    }
-    getAngle(lat, lng, newlat, newlng){
-        const latD = newlat - lat;
-        const lngD = newlng - lng;
-        const latDD = latD;
-        const lngDD = Math.cos(newlat * Math.PI / 180) * lngD;
-        const rad = Math.atan2(lngDD, latDD);
-        const angle = rad * 180 / Math.PI;
-        return angle;
-    }
-    getAngleDiff(currentAngle, lat, lng, newlat, newlng) {
-        let diff = 0;
-        let rot = null;
-        if (this.markerRotate){
-            const newAngle = this.getAngle(lat, lng, newlat, newlng);
-            let a1c = newAngle - currentAngle;
-            while (a1c < 0) {
-                a1c += 360;
-            }
-            if (a1c > 180) {
-                diff = 360 - a1c;
-                rot = ROTATION_LEFT;
+
+    /**
+     * Setter for markers array.
+     * newMarkers is assumed to be an array of marker objects.
+     */
+    @api
+    set markers(newMarkers) {
+        // Loop though newMarkers and update or create markers accordingly.
+        newMarkers.forEach(newMarker => {
+            if (this.leafletMarkers[newMarker.id]) {
+                this.updateRotatingMarker(newMarker);
             } else {
-                diff = a1c;
-                rot = ROTATION_RIGHT;
+                this.createRotatingMarker(newMarker);
             }
-        }
-        return { diff, rot };
+        });
+        // Remove markers that are not in newMarkers.
+        Object.keys(this.leafletMarkers).forEach(existingId => {
+            if (!newMarkers.find(m => m.id === existingId)) {
+                this.map.removeLayer(this.leafletMarkers[existingId].marker);
+                delete this.leafletMarkers[existingId];
+            }
+        });
     }
-    getDistance(lat0, lng0, lat1, lng1) {
-        return this.map.distance([lat0, lng0], [lat1, lng1]);
-    } 
 }
