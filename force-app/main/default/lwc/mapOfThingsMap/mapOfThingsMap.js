@@ -203,7 +203,7 @@ export default class MapOfThingsMap extends LightningElement {
                         layer.myLabel = L.marker(labelLatLng, {
                             pane: 'labelsPane',
                             icon: L.divIcon({
-                                html: '<span>${labelText}</span>',
+                                html: `<span>${labelText}</span>`,
                                 className: 'shapefile-label',
                                 iconSize: [100, 20],
                                 iconAnchor: [50, 0]
