@@ -24,7 +24,7 @@
 .shapefile-label {
     font-weight: bold;
     color: black;
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.6);
     padding: 2px 4px;
     border-radius: 3px;
     pointer-events: none;
