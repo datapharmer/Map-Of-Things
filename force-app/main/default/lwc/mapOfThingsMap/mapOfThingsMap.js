@@ -134,7 +134,10 @@ export default class MapOfThingsMap extends LightningElement {
                 },
                 onEachFeature: (feature, layer) => {
                     if (feature.properties) {
-                        layer.bindPopup(this.generatePopupContent(feature.properties), { maxHeight: 200 });
+                        // Sanitize the popup content
+                        const popupContent = this.sanitizeString(this.generatePopupContent(feature.properties));
+                        layer.bindPopup(popupContent, { maxHeight: 200 });
+
 
                         // Compute the polygon's bounds center.
                         const boundsCenter = layer.getBounds().getCenter();
@@ -226,6 +229,12 @@ export default class MapOfThingsMap extends LightningElement {
             this.showErrorToast('Error loading or parsing shapefile: ' + error.message); // Display error toast
         }
     }
+
+    sanitizeString(str) {
+    const element = document.createElement('div');
+    element.textContent = str;
+    return element.innerHTML;
+}
 
     generatePopupContent(properties) {
         let content = '';
