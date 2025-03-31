@@ -82,6 +82,7 @@ export default class MapOfThingsMap extends LightningElement {
         const labelsPane = this.map.getPane('labelsPane');
         labelsPane.style.zIndex = 650; // ensure labels are above normal marker panes
         labelsPane.style.pointerEvents = 'none';
+        labelsPane.style.setProperty('pointer-events', 'none');
 
         L.tileLayer(this.tileServerUrl, {
             minZoom: MIN_ZOOM,
