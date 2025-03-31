@@ -4,8 +4,6 @@ import { subscribe } from 'lightning/empApi';
 import getRecords from '@salesforce/apex/MapOfThingsUtils.getRecords';
 import LightningAlert from 'lightning/alert';
 
-let L;
-
 const ERROR_TITLE = 'Map Of Things - ERROR';
 const ERROR_MESSAGE_INIT_GET_RECORDS = 'On getting records';
 const ERROR_MESSAGE_INIT_GET_RECORDS_ON_CDC = 'On getting records after detecting changed';
