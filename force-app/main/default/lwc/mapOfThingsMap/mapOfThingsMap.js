@@ -2,6 +2,7 @@ import { LightningElement, api } from 'lwc';
 import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
 import SCHOOLDISTRICTS_ZIP from '@salesforce/resourceUrl/schooldistricts';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent'; // Import ShowToastEvent
 
 const LEAFLET_CSS_URL = '/leaflet.css';
 const LEAFLET_JS_URL = '/leaflet.js';
@@ -11,13 +12,15 @@ const SHP_JS_URL = '/shp.js';
 const CATILINE_JS_URL = '/catiline.js';
 const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
-const MAP_CONTAINER = 'div.inner-map-container';
+const MAP_CONTAINER_ID = 'map-root'; // Use an ID instead of a query selector
 const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
     map;
     _markers = [];
-    leafletResourcesLoaded = false; // Flag to track Leaflet loading
+    leafletResourcesLoaded = false;
+    mapInitialized = false; // Track if the map has been initialized
+    mapRoot;  // Store the map root element
 
     @api tileServerUrl;
     @api tileServerAttribution;
@@ -26,8 +29,6 @@ export default class MapOfThingsMap extends LightningElement {
     @api mapDefaultZoomLevel;
     @api autoFitBounds;
 
-    // The markers property is set by a parent/sibling component.
-    // These marker objects (with keys "lat" and "lng") will be used for filtering shapes.
     @api
     get markers() {
         return this._markers;
@@ -35,17 +36,27 @@ export default class MapOfThingsMap extends LightningElement {
     set markers(newMarkers) {
         if (newMarkers && newMarkers.length >= 0) {
             this._markers = [...newMarkers];
-            if (this.geoJsonLayer && this.leafletResourcesLoaded) { // Only filter if Leaflet is loaded
+            if (this.geoJsonLayer && this.leafletResourcesLoaded && this.mapInitialized) {
                 this.filterPolygons();
             }
         }
     }
 
-    renderedCallback() {
-        this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
+    connectedCallback() {
+        // Create the map container element
+        this.mapRoot = document.createElement('div');
+        this.mapRoot.id = MAP_CONTAINER_ID;
+        this.template.appendChild(this.mapRoot); // Append to LWC's template (but not in shadow DOM)
+        this.loadLeafletResources();
     }
 
-    async connectedCallback() {
+    renderedCallback() {
+        if (this.mapRoot) {
+            this.mapRoot.style.height = this.mapSizeY; // Apply height after element is created
+        }
+    }
+
+    async loadLeafletResources() {
         try {
             await Promise.all([
                 loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
@@ -55,7 +66,6 @@ export default class MapOfThingsMap extends LightningElement {
                 loadScript(this, LEAFLET_JS + SHP_JS_URL),
                 loadScript(this, LEAFLET_JS + SHPFILE_JS_URL)
             ]).then(() => {
-                // Set the flag when all resources are loaded
                 this.leafletResourcesLoaded = true;
 
                 // Add pointer event listeners
@@ -66,28 +76,28 @@ export default class MapOfThingsMap extends LightningElement {
                 this.drawMap();
             }).catch(error => {
                 console.error('Error loading external libraries:', error);
-                this.showErrorToast('Error loading external libraries: ' + error.message); // Display error toast
+                this.showErrorToast('Error loading external libraries: ' + error.message);
             });
 
         } catch (error) {
             console.error('Error loading external libraries:', error);
-            this.showErrorToast('Error loading external libraries: ' + error.message); // Display error toast
+            this.showErrorToast('Error loading external libraries: ' + error.message);
         }
     }
 
     handlePointerEvent(event) {
-    // Handle all pointer events
-    if (this.map && event.pointerType === 'mouse') {
+        if (this.map && event.pointerType === 'mouse') {
+            // Handle all pointer events
+        }
     }
-}
 
     async drawMap() {
         if (!this.leafletResourcesLoaded) {
             console.warn('Leaflet resources not yet loaded.');
             return;
         }
-        const container = this.template.querySelector(MAP_CONTAINER);
-        this.map = L.map(container, {
+
+        this.map = L.map(MAP_CONTAINER_ID, { // Initialize using the ID
             zoomControl: true,
             tap: false
         }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);
@@ -111,6 +121,7 @@ export default class MapOfThingsMap extends LightningElement {
         await this.renderShapefile();
 
         this.dispatchEvent(new CustomEvent(CUSTOM_EVENT_INIT, { detail: this.map }));
+        this.mapInitialized = true; // Set the flag after successful map initialization
     }
 
     async renderShapefile() {
@@ -214,7 +225,7 @@ export default class MapOfThingsMap extends LightningElement {
                 }
             }).addTo(this.map);
 
-            if (this.markers && this.markers.length > 0 && this.leafletResourcesLoaded) { // Only filter if Leaflet is loaded
+            if (this.markers && this.markers.length > 0 && this.leafletResourcesLoaded && this.mapInitialized) {
                 this.filterPolygons();
             }
 
@@ -226,15 +237,15 @@ export default class MapOfThingsMap extends LightningElement {
             }
         } catch (error) {
             console.error('Error loading or parsing shapefile:', error);
-            this.showErrorToast('Error loading or parsing shapefile: ' + error.message); // Display error toast
+            this.showErrorToast('Error loading or parsing shapefile: ' + error.message);
         }
     }
 
     sanitizeString(str) {
-    const element = document.createElement('div');
-    element.textContent = str;
-    return element.innerHTML;
-}
+        const element = document.createElement('div');
+        element.textContent = str;
+        return element.innerHTML;
+    }
 
     generatePopupContent(properties) {
         let content = '';
@@ -246,9 +257,6 @@ export default class MapOfThingsMap extends LightningElement {
         return content;
     }
 
-    /**
-     * Uses the standard ray-casting algorithm to test if a point lies inside a polygon.
-     */
     pointInPolygon(point, polygonLayer) {
         const latlngs = polygonLayer.getLatLngs();
         if (!latlngs || !latlngs.length) {
@@ -267,10 +275,6 @@ export default class MapOfThingsMap extends LightningElement {
         return inside;
     }
 
-    /**
-     * For every polygon in the GeoJSON layer, update its style and add (or remove) its label
-     * based on whether it contains any markers (using the _markers array).
-     */
     filterPolygons() {
         if (!this.geoJsonLayer) {
             return;
@@ -301,9 +305,6 @@ export default class MapOfThingsMap extends LightningElement {
         });
     }
 
-    /**
-     * Check if a polygon layer contains at least one marker from the _markers array.
-     */
     checkPolygonForMarkers(polygonLayer) {
         if (!this._markers || this._markers.length === 0) {
             return false;
