@@ -17,6 +17,7 @@ const CUSTOM_EVENT_INIT = 'init';
 export default class MapOfThingsMap extends LightningElement {
     map;
     _markers = [];
+    leafletResourcesLoaded = false; // Flag to track Leaflet loading
 
     @api tileServerUrl;
     @api tileServerAttribution;
@@ -34,7 +35,7 @@ export default class MapOfThingsMap extends LightningElement {
     set markers(newMarkers) {
         if (newMarkers && newMarkers.length >= 0) {
             this._markers = [...newMarkers];
-            if (this.geoJsonLayer) {
+            if (this.geoJsonLayer && this.leafletResourcesLoaded) { // Only filter if Leaflet is loaded
                 this.filterPolygons();
             }
         }
@@ -53,14 +54,24 @@ export default class MapOfThingsMap extends LightningElement {
                 loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
                 loadScript(this, LEAFLET_JS + SHP_JS_URL),
                 loadScript(this, LEAFLET_JS + SHPFILE_JS_URL)
-            ]);
-            // Add pointer event listeners
-            this.template.addEventListener('pointerdown', this.handlePointerEvent.bind(this));
-            this.template.addEventListener('pointermove', this.handlePointerEvent.bind(this));
-            this.template.addEventListener('pointerup', this.handlePointerEvent.bind(this));
-            this.drawMap();
+            ]).then(() => {
+                // Set the flag when all resources are loaded
+                this.leafletResourcesLoaded = true;
+
+                // Add pointer event listeners
+                this.template.addEventListener('pointerdown', this.handlePointerEvent.bind(this));
+                this.template.addEventListener('pointermove', this.handlePointerEvent.bind(this));
+                this.template.addEventListener('pointerup', this.handlePointerEvent.bind(this));
+
+                this.drawMap();
+            }).catch(error => {
+                console.error('Error loading external libraries:', error);
+                this.showErrorToast('Error loading external libraries: ' + error.message); // Display error toast
+            });
+
         } catch (error) {
             console.error('Error loading external libraries:', error);
+            this.showErrorToast('Error loading external libraries: ' + error.message); // Display error toast
         }
     }
 
@@ -71,6 +82,10 @@ export default class MapOfThingsMap extends LightningElement {
 }
 
     async drawMap() {
+        if (!this.leafletResourcesLoaded) {
+            console.warn('Leaflet resources not yet loaded.');
+            return;
+        }
         const container = this.template.querySelector(MAP_CONTAINER);
         this.map = L.map(container, {
             zoomControl: true,
@@ -196,7 +211,7 @@ export default class MapOfThingsMap extends LightningElement {
                 }
             }).addTo(this.map);
 
-            if (this.markers && this.markers.length > 0) {
+            if (this.markers && this.markers.length > 0 && this.leafletResourcesLoaded) { // Only filter if Leaflet is loaded
                 this.filterPolygons();
             }
 
@@ -208,6 +223,7 @@ export default class MapOfThingsMap extends LightningElement {
             }
         } catch (error) {
             console.error('Error loading or parsing shapefile:', error);
+            this.showErrorToast('Error loading or parsing shapefile: ' + error.message); // Display error toast
         }
     }
 
@@ -291,5 +307,16 @@ export default class MapOfThingsMap extends LightningElement {
             }
         });
         return hasMarkerInside;
+    }
+
+    // Helper function to show toast messages
+    showErrorToast(message) {
+        const event = new ShowToastEvent({
+            title: 'Error',
+            message: message,
+            variant: 'error',
+            mode: 'sticky'
+        });
+        this.dispatchEvent(event);
     }
 }
