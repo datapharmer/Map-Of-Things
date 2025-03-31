@@ -1,75 +1,73 @@
+/*
+ * Revised Marker Rotate Add-on
+ *
+ * This version uses safe API calls (style.setProperty) instead of appending to the inline style string.
+ * It also checks that window.L exists before installing the modifications.
+ */
 (function () {
-    // Check if Leaflet is available
-    if (typeof L === 'undefined') {
-        console.error('Leaflet must be loaded before the marker rotate addon');
+    // Only run if Leaflet is defined.
+    if (!window.L) {
         return;
     }
     
-    // Store the original _setPos method
-    var _old__setPos = L.Marker.prototype._setPos;
+    // Cache the original _setPos implementation.
+    var origSetPos = L.Marker.prototype._setPos;
     
     L.Marker.include({
-        _updateImg: function(i, a, s) {
-            try {
-                // Use a safer approach to modify transforms
-                if (!i || !i.style) return;
-                
-                a = L.point(s).divideBy(2)._subtract(L.point(a));
-                var transform = '';
-                transform += ' translate(' + -a.x + 'px, ' + -a.y + 'px)';
-                transform += ' rotate(' + (this.options.iconAngle || 0) + 'deg)';
-                transform += ' translate(' + a.x + 'px, ' + a.y + 'px)';
-                
-                // Use a safer way to apply transforms
-                var currentTransform = i.style[L.DomUtil.TRANSFORM] || '';
-                i.style[L.DomUtil.TRANSFORM] = currentTransform + transform;
-            } catch (e) {
-                console.warn('Error updating marker rotation:', e);
+        // Helper: update the inline image transform using safe methods.
+        _updateImg: function(img, iconAnchor, iconSize) {
+            // Compute the offset (half the icon size minus the anchor)
+            var anchorPoint = L.point(iconAnchor);
+            var sizePoint = L.point(iconSize);
+            var offset = sizePoint.divideBy(2).subtract(anchorPoint);
+            
+            // Build the transform string: first translate by -offset, then rotate, then translate back.
+            var transform =
+                'translate(' + (-offset.x) + 'px, ' + (-offset.y) + 'px) ' +
+                'rotate(' + this.options.iconAngle + 'deg) ' +
+                'translate(' + offset.x + 'px, ' + offset.y + 'px)';
+            
+            // Instead of appending to the existing transform string, set it directly.
+            if (img.style) {
+                img.style.setProperty('transform', transform);
             }
         },
-
-        setIconAngle: function (iconAngle) {
-            this.options.iconAngle = iconAngle;
+        
+        // Public method to set the icon angle.
+        setIconAngle: function (angle) {
+            this.options.iconAngle = angle;
             if (this._map) {
                 this.update();
             }
-            return this;
         },
-
+        
+        // Overridden _setPos; removes any prior transform and then applies our custom one if needed.
         _setPos: function (pos) {
-            try {
-                // Reset transforms safely
-                if (this._icon && this._icon.style) {
-                    this._icon.style[L.DomUtil.TRANSFORM] = '';
+            if (this._icon) {
+                this._icon.style.removeProperty('transform');
+            }
+            if (this._shadow) {
+                this._shadow.style.removeProperty('transform');
+            }
+            
+            origSetPos.call(this, pos);
+            
+            // If an angle is specified, update the icon and shadow images.
+            if (this.options.iconAngle && this._icon) {
+                var defaultIcon = new L.Icon.Default();
+                var iconOpts = this.options.icon.options || {};
+                var iconAnchor = iconOpts.iconAnchor || defaultIcon.options.iconAnchor;
+                var iconSize = iconOpts.iconSize || defaultIcon.options.iconSize;
+                
+                this._updateImg(this._icon, iconAnchor, iconSize);
+                
+                // Rotate the shadow, if present.
+                if (this._shadow && iconOpts.shadowSize) {
+                    var shadowAnchor = iconOpts.shadowAnchor || iconAnchor;
+                    var shadowSize = iconOpts.shadowSize;
+                    this._updateImg(this._shadow, shadowAnchor, shadowSize);
                 }
-                if (this._shadow && this._shadow.style) {
-                    this._shadow.style[L.DomUtil.TRANSFORM] = '';
-                }
-
-                // Call original method
-                _old__setPos.apply(this, [pos]);
-
-                // Apply rotation if needed
-                if (this.options.iconAngle) {
-                    var defaultIcon = new L.Icon.Default();
-                    var a = this.options.icon && this.options.icon.options.iconAnchor || 
-                            defaultIcon.options.iconAnchor;
-                    var s = this.options.icon && this.options.icon.options.iconSize || 
-                            defaultIcon.options.iconSize;
-                    
-                    if (this._icon) {
-                        this._updateImg(this._icon, a, s);
-                    }
-                    
-                    if (this._shadow && this.options.icon.options.shadowAnchor && this.options.icon.options.shadowSize) {
-                        var shadowAnchor = this.options.icon.options.shadowAnchor;
-                        var shadowSize = this.options.icon.options.shadowSize;
-                        this._updateImg(this._shadow, shadowAnchor, shadowSize);
-                    }
-                }
-            } catch (e) {
-                console.warn('Error setting marker position:', e);
             }
         }
     });
-})();
+}());
