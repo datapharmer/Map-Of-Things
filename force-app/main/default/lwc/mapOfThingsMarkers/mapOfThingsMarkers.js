@@ -1,24 +1,20 @@
-// mapOfThingsMarkers.js
+// deploy/lwc/mapOfThingsMarkers/mapOfThingsMarkers.js
 import { LightningElement, api } from 'lwc';
 
 export default class MapOfThingsMarkers extends LightningElement {
-    // Internal storage for markers data.
+    // Internal storage for marker data.
     _markers = [];
     leafletMarkers = {};
 
-    // Public getter for markers.
+    // Public accessor (only decorate the getter).
     @api
     get markers() {
-        // You could return the stored markers array,
-        // or if needed, a transformed version (e.g. only returning something specific)
         return this._markers;
     }
 
-    // Public setter for markers.
-    @api
     set markers(newMarkers) {
         this._markers = newMarkers;
-        // Process the incoming markers.
+        // Create or update markers.
         newMarkers.forEach(newMarker => {
             if (this.leafletMarkers[newMarker.id]) {
                 this.updateRotatingMarker(newMarker);
@@ -26,7 +22,7 @@ export default class MapOfThingsMarkers extends LightningElement {
                 this.createRotatingMarker(newMarker);
             }
         });
-        // Remove markers that are not in newMarkers.
+        // Remove markers that are no longer in the newMarkers array.
         Object.keys(this.leafletMarkers).forEach(existingId => {
             if (!newMarkers.find(m => m.id === existingId)) {
                 this.map.removeLayer(this.leafletMarkers[existingId].marker);
@@ -35,12 +31,17 @@ export default class MapOfThingsMarkers extends LightningElement {
         });
     }
 
+    // Example API properties for configuring icon sizes and passing the Leaflet map.
+    @api iconSizeX = 32;
+    @api iconSizeY = 32;
+    @api map;
+
     /**
      * Creates a new rotating marker using a custom approach without patching L.Marker.
      */
     createRotatingMarker(newMarker) {
         const { id, lat, lng, icon, popup } = newMarker;
-        // Create a custom icon using L.divIcon that wraps an <img> tag.
+        // Use a divIcon that wraps an <img> tag. Inline styles handle rotation.
         const html = `<img src="${icon}" 
                           style="width:${this.iconSizeX}px; height:${this.iconSizeY}px; 
                                  transform:rotate(0deg); 
@@ -48,7 +49,7 @@ export default class MapOfThingsMarkers extends LightningElement {
                           alt="marker icon"/>`;
         const customIcon = L.divIcon({
             html,
-            className: '', // optional: remove default styles if needed
+            className: '', // optional: remove default marker styling if needed
             iconSize: [this.iconSizeX, this.iconSizeY],
             iconAnchor: [this.iconSizeX / 2, this.iconSizeY / 2],
             popupAnchor: [0, -(this.iconSizeY * 0.25)]
@@ -56,7 +57,7 @@ export default class MapOfThingsMarkers extends LightningElement {
         // Create the marker using the custom icon.
         const marker = L.marker([lat, lng], { icon: customIcon });
         marker.addTo(this.map).bindPopup(popup);
-        // Store the marker and its current rotation angle (starting at 0).
+        // Store the marker with its current rotation angle (starting at 0 deg).
         this.leafletMarkers[id] = { marker, angle: 0 };
     }
 
@@ -64,7 +65,7 @@ export default class MapOfThingsMarkers extends LightningElement {
      * Updates an existing rotating marker.
      */
     updateRotatingMarker(newMarker) {
-        const { id, lat, lng, icon, popup } = newMarker;
+        const { id, lat, lng, popup } = newMarker;
         const targetData = this.leafletMarkers[id];
         if (!targetData) {
             // If the marker does not exist, create it.
@@ -72,25 +73,20 @@ export default class MapOfThingsMarkers extends LightningElement {
             return;
         }
         const { marker, angle: currentAngle } = targetData;
-        // Update marker position.
+        // Update the marker's position.
         marker.setLatLng([lat, lng]);
-        // Compute a new angle (example: simply increment by 30 degrees).
+        // Compute a new angle (for example, increment by 30 degrees).
         const newAngle = (currentAngle + 30) % 360;
-        // Retrieve the DOM element of the marker (<img> inside the divIcon).
+        // Retrieve the marker's DOM element (the <img> inside the divIcon).
         const markerEl = marker.getElement()?.querySelector('img');
         if (markerEl) {
             markerEl.style.transform = `rotate(${newAngle}deg)`;
         }
-        // Update popup content if it has changed.
+        // Update popup content if needed.
         if (popup && marker.getPopup().getContent() !== popup) {
             marker.setPopupContent(popup);
         }
-        // Save the new angle.
+        // Save the new angle
         this.leafletMarkers[id].angle = newAngle;
     }
-    
-    // Example properties that the component might receive via @api.
-    @api iconSizeX = 32;
-    @api iconSizeY = 32;
-    @api map;
 }
