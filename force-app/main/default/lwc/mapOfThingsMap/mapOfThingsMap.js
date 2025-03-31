@@ -215,7 +215,7 @@ export default class MapOfThingsMap extends LightningElement {
                             pane: 'labelsPane',
                             icon: L.divIcon({
                                 html: `<span>${labelText}</span>`,
-                                className: 'shapefile-label',
+                                className: `shapefile-label`,
                                 iconSize: [100, 20],
                                 iconAnchor: [50, 0]
                             }),
