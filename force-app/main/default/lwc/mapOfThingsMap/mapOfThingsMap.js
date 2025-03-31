@@ -64,10 +64,10 @@ export default class MapOfThingsMap extends LightningElement {
         }
     }
 
-    handlePointerEvent(event) {
-    // Handle all pointer events in a unified way
-    if (this.map && event.pointerType === 'mouse') {
-        // Your existing mouse event logic
+handlePointerEvent(event) {
+    // Handle pointer events
+    if (this.map) {
+        event.stopPropagation();
     }
 }
 
