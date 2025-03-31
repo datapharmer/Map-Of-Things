@@ -4,6 +4,8 @@ const EVENT_ZOOM_END = 'zoomend';
 const ROTATION_LEFT = 'left';
 const ROTATION_RIGHT = 'right';
 
+let L;
+
 export default class MapOfThingsMarkers extends LightningElement {
 
     leafletMarker = {};
