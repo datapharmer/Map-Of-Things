@@ -54,11 +54,22 @@ export default class MapOfThingsMap extends LightningElement {
                 loadScript(this, LEAFLET_JS + SHP_JS_URL),
                 loadScript(this, LEAFLET_JS + SHPFILE_JS_URL)
             ]);
+            // Add pointer event listeners
+            this.template.addEventListener('pointerdown', this.handlePointerEvent.bind(this));
+            this.template.addEventListener('pointermove', this.handlePointerEvent.bind(this));
+            this.template.addEventListener('pointerup', this.handlePointerEvent.bind(this));
             this.drawMap();
         } catch (error) {
             console.error('Error loading external libraries:', error);
         }
     }
+
+    handlePointerEvent(event) {
+    // Handle all pointer events in a unified way
+    if (this.map && event.pointerType === 'mouse') {
+        // Your existing mouse event logic
+    }
+}
 
     async drawMap() {
         const container = this.template.querySelector(MAP_CONTAINER);
