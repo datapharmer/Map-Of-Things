@@ -16,7 +16,6 @@ const MAP_CONTAINER = 'div.inner-map-container';
 const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
-    static renderMode = 'light';
     map;
     _markers = [];
     leafletResourcesLoaded = false;
@@ -45,11 +44,11 @@ export default class MapOfThingsMap extends LightningElement {
 connectedCallback() {
     // Firefox-specific handling
     if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
-        this.addEventListener('click', this.handlePointerEvent.bind(this));
+        this.template.addEventListener('click', this.handlePointerEvent.bind(this));
     } else {
-        this.addEventListener('pointerdown', this.handlePointerEvent.bind(this));
-        this.addEventListener('pointermove', this.handlePointerEvent.bind(this));
-        this.addEventListener('pointerup', this.handlePointerEvent.bind(this));
+        this.template.addEventListener('pointerdown', this.handlePointerEvent.bind(this));
+        this.template.addEventListener('pointermove', this.handlePointerEvent.bind(this));
+        this.template.addEventListener('pointerup', this.handlePointerEvent.bind(this));
     }
     
     this.loadLeafletResources();
@@ -57,7 +56,7 @@ connectedCallback() {
 
 
     renderedCallback() {
-        this.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
+        this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
 
     async loadLeafletResources() {
@@ -73,9 +72,9 @@ connectedCallback() {
                 this.leafletResourcesLoaded = true;
 
                 // Add pointer event listeners
-                this.addEventListener('pointerdown', this.handlePointerEvent.bind(this));
-                this.addEventListener('pointermove', this.handlePointerEvent.bind(this));
-                this.addEventListener('pointerup', this.handlePointerEvent.bind(this));
+                this.template.addEventListener('pointerdown', this.handlePointerEvent.bind(this));
+                this.template.addEventListener('pointermove', this.handlePointerEvent.bind(this));
+                this.template.addEventListener('pointerup', this.handlePointerEvent.bind(this));
 
                 this.drawMap();
             }).catch(error => {
@@ -104,7 +103,7 @@ connectedCallback() {
             console.warn('Leaflet resources not yet loaded.');
             return;
         }
-        const container = this.querySelector(MAP_CONTAINER);
+        const container = this.template.querySelector(MAP_CONTAINER);
         console.log("container defined: " + container);
 	    this.map = L.map(container, { 
             zoomControl: true,
