@@ -16,6 +16,7 @@ const MAP_CONTAINER = 'div.inner-map-container';
 const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
+    static renderMode = 'light';
     map;
     _markers = [];
     leafletResourcesLoaded = false;
