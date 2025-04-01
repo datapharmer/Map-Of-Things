@@ -52,17 +52,18 @@ connectedCallback() {
 }
 
 renderedCallback() {
-    // Only assign once.
     if (!this.mapRoot) {
+        // Log the template’s content for debugging
+        console.log('Template innerHTML:', this.template.innerHTML);
+
+        // Try to find the container element
         this.mapRoot = this.template.querySelector('.inner-map-container');
         if (this.mapRoot) {
             this.mapRoot.id = MAP_CONTAINER_ID;
-            // Set the size if needed.
             this.mapRoot.style.height = this.mapSizeY;
-            // Loads the Leaflet resources and initializes the map.
             this.loadLeafletResources();
         } else {
-            console.error('Failed to load map container.');
+            console.error('Map container not found.');
         }
     }
 }
