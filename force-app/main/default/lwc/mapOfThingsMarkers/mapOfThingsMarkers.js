@@ -5,7 +5,6 @@ const ROTATION_LEFT = 'left';
 const ROTATION_RIGHT = 'right';
 
 export default class MapOfThingsMarkers extends LightningElement {
-    static renderMode = 'light';
     leafletMarker = {};
     isMoving = false;
     initedLayerControl = false;
