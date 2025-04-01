@@ -12,7 +12,7 @@ const SHP_JS_URL = '/shp.js';
 const CATILINE_JS_URL = '/catiline.js';
 const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
-const MAP_CONTAINER_ID = 'map-root'; // Use an ID instead of a query selector
+const MAP_CONTAINER = 'div.inner-map-container';
 const CUSTOM_EVENT_INIT = 'init';
 
 export default class MapOfThingsMap extends LightningElement {
@@ -43,10 +43,6 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
 connectedCallback() {
-    this.mapRoot = document.createElement('div');
-    this.mapRoot.id = MAP_CONTAINER_ID;
-    this.template.appendChild(this.mapRoot);
-    
     // Firefox-specific handling
     if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
         this.template.addEventListener('click', this.handlePointerEvent.bind(this));
@@ -61,9 +57,7 @@ connectedCallback() {
 
 
     renderedCallback() {
-        if (this.mapRoot) {
-            this.mapRoot.style.height = this.mapSizeY; // Apply height after element is created
-        }
+        this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
 
     async loadLeafletResources() {
