@@ -56,9 +56,7 @@ connectedCallback() {
 
 
     renderedCallback() {
-        //this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
-	    //use dom manual for testing
-	this.template.querySelector('[lwc\\:dom="manual"]').style.height = this.mapSizeY;
+        this.template.querySelector(MAP_CONTAINER).style.height = this.mapSizeY;
     }
 
     async loadLeafletResources() {
@@ -105,9 +103,7 @@ connectedCallback() {
             console.warn('Leaflet resources not yet loaded.');
             return;
         }
-        //const container = this.template.querySelector(MAP_CONTAINER);
-	    //use dom manual for testing
-	const container = this.template.querySelector('[lwc\\:dom="manual"]');
+        const container = this.template.querySelector(MAP_CONTAINER);
         console.log("container defined: " + container);
 	    this.map = L.map(container, { 
             zoomControl: true,
