@@ -43,7 +43,7 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
 connectedCallback() {
-    this.mapRoot = document.createElement('div');
+    this.mapRoot = this.template.querySelector('.inner-map-container');
     this.mapRoot.id = MAP_CONTAINER_ID;
     this.template.appendChild(this.mapRoot);
     
