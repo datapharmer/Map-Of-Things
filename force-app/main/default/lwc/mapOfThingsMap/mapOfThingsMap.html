@@ -1,6 +1,6 @@
-<template lwc:render-mode='light'>
+<template>
     <div class="map-container">
-        <div class="inner-map-container"></div>
+        <div class="inner-map-container" lwc:dom="manual"></div>
         <div class="leaflet-bottom leaflet-left my-custom-button" data-show={markersExist}>
             <lightning-button-icon 
                 icon-name="utility:checkin" 
