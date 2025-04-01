@@ -41,13 +41,7 @@ export default class MapOfThingsMap extends LightningElement {
             }
         }
     }
-
 connectedCallback() {
-    this.mapRoot = this.template.querySelector('.inner-map-container');
-    this.mapRoot.id = MAP_CONTAINER_ID;
-    this.template.appendChild(this.mapRoot);
-    
-    // Firefox-specific handling
     if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
         this.template.addEventListener('click', this.handlePointerEvent.bind(this));
     } else {
@@ -55,16 +49,23 @@ connectedCallback() {
         this.template.addEventListener('pointermove', this.handlePointerEvent.bind(this));
         this.template.addEventListener('pointerup', this.handlePointerEvent.bind(this));
     }
-    
-    this.loadLeafletResources();
 }
 
-
-    renderedCallback() {
+renderedCallback() {
+    // Only assign once.
+    if (!this.mapRoot) {
+        this.mapRoot = this.template.querySelector('.inner-map-container');
         if (this.mapRoot) {
-            this.mapRoot.style.height = this.mapSizeY; // Apply height after element is created
+            this.mapRoot.id = MAP_CONTAINER_ID;
+            // Set the size if needed.
+            this.mapRoot.style.height = this.mapSizeY;
+            // Loads the Leaflet resources and initializes the map.
+            this.loadLeafletResources();
+        } else {
+            console.error('Failed to load map container.');
         }
     }
+}
 
     async loadLeafletResources() {
         try {
@@ -94,16 +95,24 @@ connectedCallback() {
             this.showErrorToast('Error loading external libraries: ' + error.message);
         }
     }
+handlePointerEvent(event) {
+    // Skip processing if the map isn't ready
+    if (!this.map) {
+        return;
+    }
 
-    handlePointerEvent(event) {
-        // Skip processing if the map isn't ready or it's not a mouse event in Firefox
-        if (!this.map || (navigator.userAgent.toLowerCase().indexOf('firefox') > -1 && event.pointerType !== 'mouse')) {
-            return;
+    // Handle events differently for Firefox
+    if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+        if (event.type === 'click') {
+            // Perform operations only on click in Firefox
         }
-        if (this.map && event.pointerType === 'mouse') {
-            // Handle all pointer events
+    } else {
+        if (event.pointerType === 'mouse') {
+            // Handle pointer events for other browsers
         }
     }
+}
+
 
     async drawMap() {
         if (!this.leafletResourcesLoaded) {
