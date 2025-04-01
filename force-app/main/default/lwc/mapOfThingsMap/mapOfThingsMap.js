@@ -242,9 +242,9 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
     sanitizeString(str) {
-        const element = document.createElement('div');
-        element.textContent = str;
-        return element.innerHTML;
+        let sanitized = str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        sanitized = sanitized.replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        return sanitized;
     }
 
     generatePopupContent(properties) {
