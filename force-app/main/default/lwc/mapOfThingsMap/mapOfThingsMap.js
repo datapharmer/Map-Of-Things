@@ -20,7 +20,6 @@ export default class MapOfThingsMap extends LightningElement {
     _markers = [];
     leafletResourcesLoaded = false;
     mapInitialized = false; // Track if the map has been initialized
-    mapRoot;  // Store the map root element
 
     @api tileServerUrl;
     @api tileServerAttribution;
