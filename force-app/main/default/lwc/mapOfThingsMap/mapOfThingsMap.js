@@ -107,7 +107,7 @@ connectedCallback() {
         }
         //const container = this.template.querySelector(MAP_CONTAINER);
 	    //use dom manual for testing
-	const container = this.template.querySelector('[lwc\\:dom="manual"]')
+	const container = this.template.querySelector('[lwc\\:dom="manual"]');
         console.log("container defined: " + container);
 	    this.map = L.map(container, { 
             zoomControl: true,
