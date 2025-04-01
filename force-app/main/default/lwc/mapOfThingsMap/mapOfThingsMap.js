@@ -45,11 +45,11 @@ export default class MapOfThingsMap extends LightningElement {
 connectedCallback() {
     // Firefox-specific handling
     if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
-        this.template.addEventListener('click', this.handlePointerEvent.bind(this));
+        this.addEventListener('click', this.handlePointerEvent.bind(this));
     } else {
-        this.template.addEventListener('pointerdown', this.handlePointerEvent.bind(this));
-        this.template.addEventListener('pointermove', this.handlePointerEvent.bind(this));
-        this.template.addEventListener('pointerup', this.handlePointerEvent.bind(this));
+        this.addEventListener('pointerdown', this.handlePointerEvent.bind(this));
+        this.addEventListener('pointermove', this.handlePointerEvent.bind(this));
+        this.addEventListener('pointerup', this.handlePointerEvent.bind(this));
     }
     
     this.loadLeafletResources();
@@ -73,9 +73,9 @@ connectedCallback() {
                 this.leafletResourcesLoaded = true;
 
                 // Add pointer event listeners
-                this.template.addEventListener('pointerdown', this.handlePointerEvent.bind(this));
-                this.template.addEventListener('pointermove', this.handlePointerEvent.bind(this));
-                this.template.addEventListener('pointerup', this.handlePointerEvent.bind(this));
+                this.addEventListener('pointerdown', this.handlePointerEvent.bind(this));
+                this.addEventListener('pointermove', this.handlePointerEvent.bind(this));
+                this.addEventListener('pointerup', this.handlePointerEvent.bind(this));
 
                 this.drawMap();
             }).catch(error => {
