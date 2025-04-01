@@ -42,13 +42,23 @@ export default class MapOfThingsMap extends LightningElement {
         }
     }
 
-    connectedCallback() {
-        // Create the map container element
-        this.mapRoot = document.createElement('div');
-        this.mapRoot.id = MAP_CONTAINER_ID;
-        this.template.appendChild(this.mapRoot); // Append to LWC's template (but not in shadow DOM)
-        this.loadLeafletResources();
+connectedCallback() {
+    this.mapRoot = document.createElement('div');
+    this.mapRoot.id = MAP_CONTAINER_ID;
+    this.template.appendChild(this.mapRoot);
+    
+    // Firefox-specific handling
+    if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+        this.template.addEventListener('click', this.handlePointerEvent.bind(this));
+    } else {
+        this.template.addEventListener('pointerdown', this.handlePointerEvent.bind(this));
+        this.template.addEventListener('pointermove', this.handlePointerEvent.bind(this));
+        this.template.addEventListener('pointerup', this.handlePointerEvent.bind(this));
     }
+    
+    this.loadLeafletResources();
+}
+
 
     renderedCallback() {
         if (this.mapRoot) {
@@ -86,6 +96,10 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
     handlePointerEvent(event) {
+        // Skip processing if the map isn't ready or it's not a mouse event in Firefox
+        if (!this.map || (navigator.userAgent.toLowerCase().indexOf('firefox') > -1 && event.pointerType !== 'mouse')) {
+            return;
+        }
         if (this.map && event.pointerType === 'mouse') {
             // Handle all pointer events
         }
@@ -145,9 +159,10 @@ export default class MapOfThingsMap extends LightningElement {
                 },
                 onEachFeature: (feature, layer) => {
                     if (feature.properties) {
-                        // Sanitize the popup content
-                        const popupContent = this.sanitizeString(this.generatePopupContent(feature.properties));
-                        layer.bindPopup(popupContent, { maxHeight: 200 });
+                        const popupContent = this.generatePopupContent(feature.properties);
+                        const popupElement = document.createElement('div');
+                        popupElement.innerHTML = popupContent;
+                        layer.bindPopup(popupElement, { maxHeight: 200 });
 
 
                         // Compute the polygon's bounds center.
@@ -242,20 +257,23 @@ export default class MapOfThingsMap extends LightningElement {
     }
 
     sanitizeString(str) {
-        let sanitized = str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        sanitized = sanitized.replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        return sanitized;
+        const element = document.createElement('div');
+        element.textContent = str;
+        return element.innerHTML;
     }
 
-    generatePopupContent(properties) {
-        let content = '';
-        for (const key in properties) {
-            if (properties.hasOwnProperty(key)) {
-                content += `${key}: ${properties[key]}<br>`;
-            }
+generatePopupContent(properties) {
+    let content = '';
+    for (const key in properties) {
+        if (properties.hasOwnProperty(key)) {
+            // Use textContent instead of innerHTML to avoid DOM parsing
+            const element = document.createElement('div');
+            element.textContent = `${key}: ${properties[key]}`;
+            content += element.outerHTML;
         }
-        return content;
     }
+    return content;
+}
 
     pointInPolygon(point, polygonLayer) {
         const latlngs = polygonLayer.getLatLngs();
