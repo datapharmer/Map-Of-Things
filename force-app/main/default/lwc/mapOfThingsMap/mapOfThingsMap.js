@@ -103,8 +103,9 @@ connectedCallback() {
             console.warn('Leaflet resources not yet loaded.');
             return;
         }
-
-        this.map = L.map(MAP_CONTAINER_ID, { // Initialize using the ID
+        const container = this.template.querySelector(MAP_CONTAINER);
+        console.log("container defined: " + container);
+	    this.map = L.map(container, { 
             zoomControl: true,
             tap: false
         }).setView(this.mapDefaultPosition, this.mapDefaultZoomLevel);
