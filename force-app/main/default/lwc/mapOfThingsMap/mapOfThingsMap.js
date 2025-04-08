@@ -14,6 +14,11 @@ const MIN_ZOOM = 2;
 const FIT_BOUNDS_PADDING = [20, 20];
 const MAP_CONTAINER = 'div.inner-map-container';
 const CUSTOM_EVENT_INIT = 'init';
+const skipCopyProp = {
+    rangeParent: true, // LWS restricted
+    originalTarget: true, // Firefox-specific
+    explicitOriginalTarget: true // Firefox-specific
+};
 
 export default class MapOfThingsMap extends LightningElement {
     map;
@@ -88,15 +93,31 @@ connectedCallback() {
         }
     }
 
-    handlePointerEvent(event) {
-        // Skip processing if the map isn't ready or it's not a mouse event in Firefox
-        if (!this.map || (navigator.userAgent.toLowerCase().indexOf('firefox') > -1 && event.pointerType !== 'mouse')) {
-            return;
+handlePointerEvent(event) {
+    // Skip processing if the map isn't ready or it's not a mouse event in Firefox
+    if (!this.map || (navigator.userAgent.toLowerCase().indexOf('firefox') > -1 && event.pointerType !== 'mouse')) {
+        return;
+    }
+
+    // Safeguard: Ignore restricted properties
+    for (const key in event) {
+        if (skipCopyProp[key]) {
+            console.warn(`Skipping restricted property: ${key}`);
+            continue;
         }
-        if (this.map && event.pointerType === 'mouse') {
-            // Handle all pointer events
+
+        // Process other event properties (if needed)
+        if (typeof event[key] !== 'function') {
+            // Example: Log the property or perform some action
+            console.log(`${key}: ${event[key]}`);
         }
     }
+
+    // Process the event further as needed
+    if (this.map && event.pointerType === 'mouse') {
+        // Handle all pointer events
+    }
+}
 
     async drawMap() {
         if (!this.leafletResourcesLoaded) {
