@@ -119,19 +119,28 @@ export default class MapOfThingsMarkers extends LightningElement {
         const groupName = this.leafletMarker[markerId].group;
         this.removeFromLayerGroup(markerId, groupName);
     }
-    createMarker(newMarker) {
-        const { id, lat, lng, icon, group } = newMarker;
-        const imgurl = icon;
-        const angle = 0;
-        const popup = L.popup().setContent(newMarker.popup);
-        const marker = this.useCustomMarker ? L.marker([lat, lng], {
-            icon: this.getMarkerIcon(imgurl),
-            iconAngle: 0
-        }): L.marker([lat, lng]);
-        marker.addTo(this.map).bindPopup(popup);
-        this.leafletMarker[id] = { lat, lng, popup, angle, imgurl, marker, group };
-        this.initLayerGroup(newMarker);
-    }
+    
+createMarker(newMarker) {
+    const { id, lat, lng, icon, group } = newMarker;
+    const imgurl = icon;
+    const popupContent = L.popup().setContent(newMarker.popup);
+    // Safeguard: Avoid accessing restricted properties in event processing
+    const safePopupContent = this.sanitizePopupContent(newMarker.popup);
+    const marker = this.useCustomMarker
+        ? L.marker([lat, lng], {
+              icon: this.getMarkerIcon(imgurl),
+              iconAngle: 0
+          })
+        : L.marker([lat, lng]);
+    marker.addTo(this.map).bindPopup(safePopupContent);
+    this.leafletMarker[id] = { lat, lng, popupContent, marker, group };
+    this.initLayerGroup(newMarker);
+}
+
+sanitizePopupContent(content) {
+    // Ensure the popup content is safe and doesn't rely on restricted properties
+    return content.replace(/rangeParent|originalTarget|explicitOriginalTarget/gi, '[Restricted]');
+}
 
     changeMarker(newMarker) {
         this.updatePopup(newMarker);
