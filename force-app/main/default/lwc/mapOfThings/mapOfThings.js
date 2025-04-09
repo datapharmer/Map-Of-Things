@@ -1,24 +1,18 @@
-import { LightningElement, api, track } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { LightningElement, api } from 'lwc';
 import { subscribe } from 'lightning/empApi';
 import getRecords from '@salesforce/apex/MapOfThingsUtils.getRecords';
 import LightningAlert from 'lightning/alert';
 
 const ERROR_TITLE = 'Map Of Things - ERROR';
 const ERROR_MESSAGE_INIT_GET_RECORDS = 'On getting records';
-const ERROR_MESSAGE_INIT_GET_RECORDS_ON_CDC = 'On getting records after detecting change';
+const ERROR_MESSAGE_INIT_GET_RECORDS_ON_CDC = 'On getting records after detecting changed';
 const ERROR_MESSAGE_INIT_CDC = 'On init subscribe Change Data Capture';
 
 export default class MapOfThings extends LightningElement {
     map;
     records = [];
-    propertiesChecked = false;
     mapIsReady = false;
     recordsAreReady = false;
-
-    // Shapefile-related properties
-    @track shapefileResourceName = ''; // Holds the shapefile resource name
-    @track shapefileColor = ''; // Holds the shapefile color
 
     @api tileServerUrl;
     @api tileServerAttribution;
@@ -39,86 +33,64 @@ export default class MapOfThings extends LightningElement {
     @api moveDuration;
     @api autoFitBounds;
     @api markerZoomWithMap;
+    
+    // *** NEW PROPERTIES FOR CONFIGURING THE SHAPEFILE ***
+    @api shapefileResourceName;  // Name of the static resource (e.g. "schooldistricts")
+    @api shapefileColor;         // Either a valid CSS color (e.g. "blue") or the value "random"
 
-    // Getters for computed properties
-    get cdcChannelName() {
-        if (this.targetObj) {
+    get cdcChannelName(){
+        if (this.targetObj){
             const str = this.targetObj.replace('__c', '__');
             return `/data/${str}ChangeEvent`;
         }
         return '';
-    }
-    get markers() {
-        if (this.recordsAreReady) {
+    }   
+    get markers(){
+        if (this.recordsAreReady){
             return this.records.map(record => {
                 return {
                     id: record.Id,
                     lat: parseFloat(record[this.targetLat]),
                     lng: parseFloat(record[this.targetLng]),
                     popup: record[this.targetExplain],
-                    icon: this.useCustomMarker ? record[this.targetImg] : null,
-                    group: this.useGrouping ? record[this.targetGroup] : null
-                };
+                    icon: this.useCustomMarker ? record[this.targetImg]: null,
+                    group: this.useGrouping ? record[this.targetGroup]: null
+                }
             });
         }
         return [];
     }
-    get useCustomMarker() {
+    get useCustomMarker(){
         return this.targetImg && this.targetImg.length > 1;
     }
-    get useGrouping() {
+    get useGrouping(){
         return this.targetGroup && this.targetGroup.length > 1;
     }
-    get normalizedMarkerRotate() {
+    get normalizedMarkerRotate(){
         return this.markerRotate && this.useCustomMarker;
     }
-    get mapDefaultPosition() {
+    get mapDefaultPosition(){
         return [parseFloat(this.mapDefaultPositionLat), parseFloat(this.mapDefaultPositionLng)];
     }
 
-    // Event handler for shapefile resource name input
-    handleShapefileResourceNameChange(event) {
-        this.shapefileResourceName = event.target.value;
-    }
-
-    // Event handler for shapefile color input
-    handleShapefileColorChange(event) {
-        this.shapefileColor = event.target.value;
-    }
-
-    // Event handler for applying shapefile updates
-    applyShapefileUpdate() {
-        if (!this.shapefileResourceName) {
-            this.showErrorToast('Please provide a valid shapefile resource name.');
-            return;
-        }
-        // The child component will automatically pick up the updated properties
-    }
-
-    // Initialize the map and records
-    initedMap(event) {
+    initedMap(event){
         this.map = event.detail;
         this.mapIsReady = true;
         this.initGetRecords();
     }
-
-    initGetRecords() {
-        this.getRecords(
-            records => {
-                this.records = records && records.length > 0 ? records : [];
-                this.recordsAreReady = true;
-                this.subscribeCdc();
-            },
-            error => {
-                this.alert(`${ERROR_MESSAGE_INIT_GET_RECORDS} - ${error.body.message}`);
-            }
-        );
+    initGetRecords(){
+        this.getRecords(records => {
+            this.records = records && records.length > 0 ? records: [];
+            this.recordsAreReady = true;
+            this.subscribeCdc();
+        }, error => {
+            this.alert(`${ERROR_MESSAGE_INIT_GET_RECORDS} - ${error.body.message}`);
+        });
     }
-
-    subscribeCdc() {
+    subscribeCdc(){
         const messageCallback = () => {
             this.getRecords(
-                records => (this.records = records && records.length > 0 ? records : []),
+                records => this.records = records && records.length > 0 ? records: [], 
                 error => this.alert(`${ERROR_MESSAGE_INIT_GET_RECORDS_ON_CDC} - ${error.body.message}`)
             );
         };
@@ -126,8 +98,7 @@ export default class MapOfThings extends LightningElement {
             this.alert(`${ERROR_MESSAGE_INIT_CDC} - ${error.body.message}`);
         });
     }
-
-    getRecords(onGetRecords, onError) {
+    getRecords(onGetRecords, onError){
         getRecords({
             objectName: this.targetObj,
             LatName: this.targetLat,
@@ -136,23 +107,9 @@ export default class MapOfThings extends LightningElement {
             ImgName: this.targetImg,
             GroupName: this.targetGroup,
             whereClause: this.whereClause
-        })
-            .then(onGetRecords)
-            .catch(onError);
+        }).then(onGetRecords).catch(onError);
     }
-
-    alert(message) {
-        const theme = 'error';
-        const label = ERROR_TITLE;
-        LightningAlert.open({ label, message, theme });
-    }
-
-    showErrorToast(message) {
-        const event = new ShowToastEvent({
-            title: 'Error',
-            message,
-            variant: 'error'
-        });
-        this.dispatchEvent(event);
+    alert(message){
+        LightningAlert.open({label: ERROR_TITLE, message, theme: 'error'});
     }
 }
