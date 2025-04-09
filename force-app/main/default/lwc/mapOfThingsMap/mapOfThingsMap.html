@@ -1,23 +1,6 @@
 <template>
     <div class="map-container">
         <div class="inner-map-container" lwc:dom="manual"></div>
-        <div class="controls">
-            <lightning-input 
-                label="Shapefile Resource Name" 
-                type="text" 
-                onchange={handleShapefileResourceNameChange}>
-            </lightning-input>
-            <lightning-input 
-                label="Shapefile Color" 
-                type="text" 
-                placeholder="e.g., #ff0000 or leave empty for random" 
-                onchange={handleShapefileColorChange}>
-            </lightning-input>
-            <lightning-button 
-                label="Update Shapefile" 
-                onclick={applyShapefileUpdate}>
-            </lightning-button>
-        </div>
         <div class="leaflet-bottom leaflet-left my-custom-button" data-show={markersExist}>
             <lightning-button-icon 
                 icon-name="utility:checkin" 
