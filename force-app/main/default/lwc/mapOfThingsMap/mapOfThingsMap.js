@@ -137,7 +137,7 @@ export default class MapOfThingsMap extends LightningElement {
         // Construct the URL for the shapefile using the configured static resource name.
         const resourceName = this.shapefileResourceName ? this.shapefileResourceName : 'schooldistricts';
         // In Salesforce, static resources are accessible at '/resource/<namespace>[/<file>]' (here we assume no namespace)
-        const shapefileUrl = `/${resourceName}`; // Adjust the path if needed (e.g. '/resource/<id>/...')
+        const shapefileUrl = `/resource/${resourceName}`;// Adjust the path if needed (e.g. '/resource/<id>/...')
         
         try {
             const response = await fetch(shapefileUrl);
