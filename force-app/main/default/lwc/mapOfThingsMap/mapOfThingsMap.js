@@ -1,18 +1,11 @@
 import { LightningElement, api, track } from 'lwc';
 import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-import LEAFLET_JS from '@salesforce/resourceUrl/leafletjs';
-import SCHOOLDISTRICTS_ZIP from '@salesforce/resourceUrl/schooldistricts'; // Example static resource
-import { resolveStaticResourceUrl } from './utils'; // Utility to resolve URLs dynamically
-
-const LEAFLET_CSS_URL = '/leaflet.css';
-const LEAFLET_JS_URL = '/leaflet.js';
-const MIN_ZOOM = 2;
-const FIT_BOUNDS_PADDING = [20, 20];
-const MAP_CONTAINER = 'div.inner-map-container';
-const CUSTOM_EVENT_INIT = 'init';
+import { resolveStaticResourceUrl } from './utils';
 
 export default class MapOfThingsMap extends LightningElement {
+    @api shapefileResourceName; // Shapefile resource name passed from parent
+    @api shapefileColor; // Shapefile color passed from parent
     map;
     geoJsonLayer;
     leafletResourcesLoaded = false;
@@ -88,7 +81,6 @@ export default class MapOfThingsMap extends LightningElement {
         }
 
         try {
-            // Resolve the shapefile URL dynamically
             const shapefileUrl = resolveStaticResourceUrl(this.shapefileResourceName);
 
             const response = await fetch(shapefileUrl);
@@ -99,7 +91,6 @@ export default class MapOfThingsMap extends LightningElement {
             const arrayBuffer = await response.arrayBuffer();
             const geojson = await shp(arrayBuffer);
 
-            // Generate random color if no color is provided
             const randomColor = () => `#${Math.floor(Math.random() * 16777215).toString(16)}`;
             const color = this.shapefileColor || randomColor();
 
@@ -116,11 +107,10 @@ export default class MapOfThingsMap extends LightningElement {
                 }
             }).addTo(this.map);
 
-            // Auto-fit bounds if enabled
             if (this.autoFitBounds) {
                 const bounds = this.geoJsonLayer.getBounds();
                 if (bounds.isValid()) {
-                    this.map.fitBounds(bounds, { padding: FIT_BOUNDS_PADDING });
+                    this.map.fitBounds(bounds, { padding: 20 });
                 }
             }
         } catch (error) {
@@ -128,6 +118,7 @@ export default class MapOfThingsMap extends LightningElement {
             this.showErrorToast(`Error loading shapefile: ${error.message}`);
         }
     }
+}
 
     generatePopupContent(properties) {
         let content = '';
