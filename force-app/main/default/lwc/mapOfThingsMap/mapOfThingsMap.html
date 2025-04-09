@@ -18,5 +18,14 @@
                 onclick={applyShapefileUpdate}>
             </lightning-button>
         </div>
+        <div class="leaflet-bottom leaflet-left my-custom-button" data-show={markersExist}>
+            <lightning-button-icon 
+                icon-name="utility:checkin" 
+                variant="border-filled" 
+                alternative-text="fitBounds" 
+                title="fitBounds"
+                onclick={fitBounds}
+            ></lightning-button-icon>
+        </div>
     </div>
 </template>
