@@ -1,23 +1,5 @@
 <template>
     <lightning-card>
-        <!-- UI for Shapefile Controls -->
-        <div class="controls">
-            <lightning-input 
-                label="Shapefile Resource Name" 
-                type="text" 
-                onchange={handleShapefileResourceNameChange}>
-            </lightning-input>
-            <lightning-input 
-                label="Shapefile Color" 
-                type="text" 
-                placeholder="e.g., #ff0000 or leave empty for random" 
-                onchange={handleShapefileColorChange}>
-            </lightning-input>
-            <lightning-button 
-                label="Update Shapefile" 
-                onclick={applyShapefileUpdate}>
-            </lightning-button>
-        </div>
         <!-- Leaflet Map -->
         <c-map-of-things-map 
             oninit={initedMap}
@@ -29,7 +11,7 @@
             auto-fit-bounds={autoFitBounds}
             markers={markers}
             shapefile-resource-name={shapefileResourceName}
-            shapefile-color={shapefileColor}>
+            shapefile-color={shapefileColor}
         ></c-map-of-things-map>    
         <!--/ Leaflet Map -->
 
