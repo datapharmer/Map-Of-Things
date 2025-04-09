@@ -1,5 +1,4 @@
 import { LightningElement, api } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { subscribe } from 'lightning/empApi';
 import getRecords from '@salesforce/apex/MapOfThingsUtils.getRecords';
 import LightningAlert from 'lightning/alert';
@@ -10,13 +9,11 @@ const ERROR_MESSAGE_INIT_GET_RECORDS_ON_CDC = 'On getting records after detectin
 const ERROR_MESSAGE_INIT_CDC = 'On init subscribe Change Data Capture';
 
 export default class MapOfThings extends LightningElement {
-
     map;
     records = [];
-    propertiesChecked = false;
     mapIsReady = false;
     recordsAreReady = false;
-    
+
     @api tileServerUrl;
     @api tileServerAttribution;
     @api mapSizeY;
@@ -37,6 +34,10 @@ export default class MapOfThings extends LightningElement {
     @api autoFitBounds;
     @api markerZoomWithMap;
     
+    // *** NEW PROPERTIES FOR CONFIGURING THE SHAPEFILE ***
+    @api shapefileResourceName;  // Name of the static resource (e.g. "schooldistricts")
+    @api shapefileColor;         // Either a valid CSS color (e.g. "blue") or the value "random"
+
     get cdcChannelName(){
         if (this.targetObj){
             const str = this.targetObj.replace('__c', '__');
@@ -74,8 +75,6 @@ export default class MapOfThings extends LightningElement {
 
     initedMap(event){
         this.map = event.detail;
-        //line below may be needed to keep sf lightning locker happy 
-        //event.preventDefault();
         this.mapIsReady = true;
         this.initGetRecords();
     }
@@ -111,8 +110,6 @@ export default class MapOfThings extends LightningElement {
         }).then(onGetRecords).catch(onError);
     }
     alert(message){
-        const theme = 'error';
-        const label = ERROR_TITLE;
-        LightningAlert.open({label, message, theme});
+        LightningAlert.open({label: ERROR_TITLE, message, theme: 'error'});
     }
 }
