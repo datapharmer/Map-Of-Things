@@ -137,6 +137,22 @@ export default class MapOfThingsMap extends LightningElement {
         return content;
     }
 
+    handleShapefileResourceNameChange(event) {
+        this.shapefileResourceName = event.target.value;
+    }
+
+    handleShapefileColorChange(event) {
+        this.shapefileColor = event.target.value;
+    }
+
+    applyShapefileUpdate() {
+        if (!this.shapefileResourceName) {
+            this.showErrorToast('Please provide a valid shapefile resource name.');
+            return;
+        }
+        this.updateShapefile(this.shapefileResourceName, this.shapefileColor);
+    }
+
     showErrorToast(message) {
         this.dispatchEvent(
             new ShowToastEvent({
