@@ -37,6 +37,13 @@ export default class MapOfThings extends LightningElement {
     @api autoFitBounds;
     @api markerZoomWithMap;
     
+    // New properties for shapefile customization
+    @api shapefileResourceName;
+    @api shapefilePolygonColor;
+    @api shapefileRandomColors = false;
+    @api shapefileOpacity = 0.5;
+    @api shapefileWeight = 1;
+    
     get cdcChannelName(){
         if (this.targetObj){
             const str = this.targetObj.replace('__c', '__');
@@ -74,8 +81,6 @@ export default class MapOfThings extends LightningElement {
 
     initedMap(event){
         this.map = event.detail;
-        //line below may be needed to keep sf lightning locker happy 
-        //event.preventDefault();
         this.mapIsReady = true;
         this.initGetRecords();
     }
