@@ -149,18 +149,13 @@ export default class MapOfThingsMap extends LightningElement {
             if (this.resourceLoading) return;
             this.resourceLoading = true;
             
-            // Use dynamic import to get the shapefile resource
-            let shpfile;
-            try {
-                const resourceInfo = await getStaticResource(this.shapefileResourceName);
-                shpfile = resourceInfo.url;
-            } catch (error) {
-                console.error('Error loading shapefile resource:', error);
-                this.showErrorToast(`Error loading shapefile resource ${this.shapefileResourceName}: ${error.message}`);
-                this.resourceLoading = false;
-                return;
-            }
-
+            // Use the shapefile resource directly
+            // Instead of dynamic loading, we'll use the imported resource
+            let shpfile = SCHOOLDISTRICTS_ZIP;
+            
+            // If a different shapefile is specified and it's not the default,
+            // we could implement a mechanism to select different shapefiles here
+            
             const response = await fetch(shpfile);
             if (!response.ok) {
                 throw new Error(`Failed to fetch shapefile: ${response.statusText}`);
@@ -197,4 +192,232 @@ export default class MapOfThingsMap extends LightningElement {
                         let insideMarkers = [];
                         if (this._markers && this._markers.length > 0) {
                             this._markers.forEach(m => {
-                                const pt = L.latLng(m
+                                const pt = L.latLng(m.lat, m.lng);
+                                if (layer.getBounds().contains(pt) && this.pointInPolygon(pt, layer)) {
+                                    insideMarkers.push(pt);
+                                }
+                            });
+                        }
+
+                        if (insideMarkers.length > 0) {
+                            let sumLat = 0, sumLng = 0;
+                            insideMarkers.forEach(pt => {
+                                sumLat += pt.lat;
+                                sumLng += pt.lng;
+                            });
+                            let avgMarker = L.latLng(sumLat / insideMarkers.length, sumLng / insideMarkers.length);
+
+                            // Compute vector in layer coordinates from average marker position to polygon center.
+                            const centerPt = this.map.latLngToLayerPoint(boundsCenter);
+                            const markerPt = this.map.latLngToLayerPoint(avgMarker);
+                            let vector = {
+                                x: centerPt.x - markerPt.x,
+                                y: centerPt.y - markerPt.y
+                            };
+                            let len = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
+                            if (len === 0) {
+                                vector = { x: 0, y: -20 };
+                            } else {
+                                vector.x = (vector.x / len) * 20;
+                                vector.y = (vector.y / len) * 20;
+                            }
+                            const offsetPoint = L.point(centerPt.x + vector.x, centerPt.y + vector.y);
+                            const candidate = this.map.layerPointToLatLng(offsetPoint);
+                            if (this.pointInPolygon(candidate, layer)) {
+                                labelLatLng = candidate;
+                            } else {
+                                labelLatLng = boundsCenter;
+                            }
+                        } else {
+                            // If no markers inside, offset slightly upward.
+                            const centerPt = this.map.latLngToLayerPoint(boundsCenter);
+                            const offsetPoint = L.point(centerPt.x, centerPt.y - 20);
+                            const candidate = this.map.layerPointToLatLng(offsetPoint);
+                            if (this.pointInPolygon(candidate, layer)) {
+                                labelLatLng = candidate;
+                            } else {
+                                labelLatLng = boundsCenter;
+                            }
+                        }
+
+                        // Create the label marker with bold styling.
+                        // Specify pane 'labelsPane' so that the label appears atop markers.
+                        const labelText = feature.properties.NAME;
+                        layer.myLabel = L.marker(labelLatLng, {
+                            pane: 'labelsPane',
+                            icon: L.divIcon({
+                                html: `<span style="font-weight: bold; color: black; background: rgba(255,255,255,0.5); padding: 2px 4px; border-radius: 3px; pointer-events: none; width: auto; user-select: none;">${labelText}</span>`,
+                                className: `shapefile-label`,
+                                iconSize: [100, 20],
+                                iconAnchor: [50, 0]
+                            }),
+                            interactive: false // ensures the label itself does not intercept mouse events
+                        });
+                    }
+                }
+            }).addTo(this.map);
+
+            if (this.markers && this.markers.length > 0 && this.leafletResourcesLoaded && this.mapInitialized) {
+                this.filterPolygons();
+            }
+
+            if (this.autoFitBounds) {
+                const bounds = this.geoJsonLayer.getBounds();
+                if (bounds.isValid()) {
+                    this.map.fitBounds(bounds, { padding: FIT_BOUNDS_PADDING });
+                }
+            }
+            
+            this.resourceLoading = false;
+        } catch (error) {
+            console.error('Error loading or parsing shapefile:', error);
+            this.showErrorToast('Error loading or parsing shapefile: ' + error.message);
+            this.resourceLoading = false;
+        }
+    }
+        sanitizeString(str) {
+
+        const element = document.createElement('div');
+
+        element.textContent = str;
+
+        return element.innerHTML;
+
+    }
+
+
+generatePopupContent(properties) {
+
+    let content = '';
+
+    for (const key in properties) {
+
+        if (properties.hasOwnProperty(key)) {
+
+            // Use textContent instead of innerHTML to avoid DOM parsing
+
+            const element = document.createElement('div');
+
+            element.textContent = `${key}: ${properties[key]}`;
+
+            content += element.outerHTML;
+
+        }
+
+    }
+
+    return content;
+
+}
+
+
+    pointInPolygon(point, polygonLayer) {
+
+        const latlngs = polygonLayer.getLatLngs();
+
+        if (!latlngs || !latlngs.length) {
+
+            return false;
+
+        }
+
+        const polygon = latlngs[0];
+
+        let inside = false;
+
+        const x = point.lng;
+
+        const y = point.lat;
+
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+
+            const xi = polygon[i].lng, yi = polygon[i].lat;
+
+            const xj = polygon[j].lng, yj = polygon[j].lat;
+
+            const intersect = ((yi > y) !== (yj > y)) && (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi);
+
+            if (intersect) inside = !inside;
+
+        }
+
+        return inside;
+
+    }
+
+
+    filterPolygons() {
+
+        if (!this.geoJsonLayer) {
+
+            return;
+
+        }
+
+        this.geoJsonLayer.eachLayer(layer => {
+
+            if (layer.feature && layer.feature.geometry.type.includes('Polygon')) {
+
+                const shouldShow = this.checkPolygonForMarkers(layer);
+
+                layer.setStyle({
+
+                    opacity: shouldShow ? 1 : 0,
+
+                    fillOpacity: shouldShow ? 0.5 : 0,
+
+                    pointerEvents: shouldShow ? 'auto' : 'none'
+
+                });
+
+                if (layer.redraw) {
+
+                    layer.redraw();
+
+                }
+
+                if (layer.myLabel) {
+
+                    if (shouldShow) {
+
+                        if (!layer.myLabel._map) {
+
+                            layer.myLabel.addTo(this.labelLayer);
+
+                        }
+
+                    } else {
+                        if (layer.myLabel._map) {
+                            this.labelLayer.removeLayer(layer.myLabel);
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    checkPolygonForMarkers(polygonLayer) {
+        if (!this._markers || this._markers.length === 0) {
+            return false;
+        }
+        let hasMarkerInside = false;
+        this._markers.forEach(markerData => {
+            const markerLatLng = L.latLng(markerData.lat, markerData.lng);
+            if (polygonLayer.getBounds().contains(markerLatLng) && this.pointInPolygon(markerLatLng, polygonLayer)) {
+                hasMarkerInside = true;
+            }
+        });
+        return hasMarkerInside;
+    }
+
+    // Helper function to show toast messages
+    showErrorToast(message) {
+        const event = new ShowToastEvent({
+            title: 'Error',
+            message: message,
+            variant: 'error',
+            mode: 'sticky'
+        });
+        this.dispatchEvent(event);
+    }
+}
