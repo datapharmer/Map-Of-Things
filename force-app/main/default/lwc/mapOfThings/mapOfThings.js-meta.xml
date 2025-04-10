@@ -28,6 +28,7 @@
             <property name="moveDuration" type="Integer" label="Marker transition duration(millisecond)" required="true" default="3000" />
             <property name="autoFitBounds" type="Boolean" label="Fit bounds map on marker transition" required="false" default="true" />
             <property name="markerZoomWithMap" type="Boolean" label="Adjust scale custom marker icon on map zoom" required="false" default="false" />
+            <property name="showAllShapes" type="Boolean" default="false" label="Show All Shapes" />
             <property name="shapefileResourceName" type="String" label="Shapefile Static Resource Name" required="false" default="schooldistricts" />
             <property name="shapefileColor" type="String" label="Shapefile Polygons Color (or use 'random')" required="false" default="blue" />
         </targetConfig>
