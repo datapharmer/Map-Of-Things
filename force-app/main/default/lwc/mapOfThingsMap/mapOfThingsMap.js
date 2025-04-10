@@ -32,7 +32,17 @@ export default class MapOfThingsMap extends LightningElement {
     // API properties for shapefile configuration.
     @api shapefileResourceName; // expected to be the static resource name (e.g., "schooldistricts")
     @api shapefileColor;        // either a valid CSS color (e.g. "blue") or "random"
-    @api showAllShapes = false;
+
+    @track showAllShapes = false; // Default value
+
+    // Computed property for the button variant
+    get buttonVariant() {
+        return this.showAllShapes ? 'brand' : 'neutral';
+    }
+    
+    toggleShapeVisibility() {
+        this.showAllShapes = !this.showAllShapes;
+    }
 
     @api
     get markers() {
