@@ -33,7 +33,7 @@ export default class MapOfThingsMap extends LightningElement {
     @api shapefileResourceName; // expected to be the static resource name (e.g., "schooldistricts")
     @api shapefileColor;        // either a valid CSS color (e.g. "blue") or "random"
 
-    @track showAllShapes = false; // Default value
+    @api showAllShapes = false; // Default value
 
     // Computed property for the button variant
     get buttonVariant() {
