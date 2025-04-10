@@ -33,6 +33,7 @@ export default class MapOfThings extends LightningElement {
     @api moveDuration;
     @api autoFitBounds;
     @api markerZoomWithMap;
+    @api showAllShapes = false; // Default to only showing shapes with markers
     
     // *** NEW PROPERTIES FOR CONFIGURING THE SHAPEFILE ***
     @api shapefileResourceName;  // Name of the static resource (e.g. "schooldistricts")
@@ -98,6 +99,16 @@ export default class MapOfThings extends LightningElement {
             this.alert(`${ERROR_MESSAGE_INIT_CDC} - ${error.body.message}`);
         });
     }
+
+    toggleShapeVisibility() {
+        this.showAllShapes = !this.showAllShapes;
+        // Pass the value to the map component
+        const mapElement = this.template.querySelector('c-map-of-things-map');
+        if (mapElement) {
+            mapElement.showAllShapes = this.showAllShapes;
+        }
+    }
+    
     getRecords(onGetRecords, onError){
         getRecords({
             objectName: this.targetObj,
