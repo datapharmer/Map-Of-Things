@@ -12,6 +12,7 @@
             markers={markers}
             shapefile-resource-name={shapefileResourceName}
             shapefile-color={shapefileColor}
+            show-all-shapes={showAllShapes}
         ></c-map-of-things-map>    
         <!--/ Leaflet Map -->
 
@@ -28,5 +29,15 @@
             marker-zoom-with-map={markerZoomWithMap}
         ></c-map-of-things-markers>
         <!--/ Leaflet Marker Objects -->
+
+        <!-- Shape Visibility Toggle -->
+        <lightning-button-group>
+            <lightning-button
+                label="Show All Shapes"
+                variant={showAllShapes ? 'brand' : 'neutral'}
+                onclick={toggleShapeVisibility}
+                title="Toggle whether to show all shapes or only those containing markers">
+            </lightning-button>
+        </lightning-button-group>
     </lightning-card>
 </template>
