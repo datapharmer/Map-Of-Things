@@ -266,7 +266,7 @@ export default class MapOfThingsMap extends LightningElement {
         }
         this.geoJsonLayer.eachLayer(layer => {
             if (layer.feature && layer.feature.geometry.type.includes('Polygon')) {
-                const shouldShow = this.checkPolygonForMarkers(layer);
+                const shouldShow = this.showAllShapes || this.checkPolygonForMarkers(layer);
                 // Compute the final color: either use the defined color, generate a random one, or fallback.
                 let fillColor = 'blue';
                 if (this.shapefileColor) {
