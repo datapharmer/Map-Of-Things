@@ -29,9 +29,10 @@ export default class MapOfThingsMap extends LightningElement {
     @api mapDefaultZoomLevel;
     @api autoFitBounds;
 
-    // NEW API properties for shapefile configuration.
+    // API properties for shapefile configuration.
     @api shapefileResourceName; // expected to be the static resource name (e.g., "schooldistricts")
     @api shapefileColor;        // either a valid CSS color (e.g. "blue") or "random"
+    @api showAllShapes = false;
 
     @api
     get markers() {
