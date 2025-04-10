@@ -33,9 +33,9 @@ export default class MapOfThings extends LightningElement {
     @api moveDuration;
     @api autoFitBounds;
     @api markerZoomWithMap;
-    @api showAllShapes = false; // Default to only showing shapes with markers
-    
-    // *** NEW PROPERTIES FOR CONFIGURING THE SHAPEFILE ***
+    @api showAllShapes = false; // This is now set via the design configuration
+
+    // *** New properties for configuring the shapefile ***
     @api shapefileResourceName;  // Name of the static resource (e.g. "schooldistricts")
     @api shapefileColor;         // Either a valid CSS color (e.g. "blue") or the value "random"
 
@@ -46,6 +46,7 @@ export default class MapOfThings extends LightningElement {
         }
         return '';
     }   
+    
     get markers(){
         if (this.recordsAreReady){
             return this.records.map(record => {
@@ -54,22 +55,26 @@ export default class MapOfThings extends LightningElement {
                     lat: parseFloat(record[this.targetLat]),
                     lng: parseFloat(record[this.targetLng]),
                     popup: record[this.targetExplain],
-                    icon: this.useCustomMarker ? record[this.targetImg]: null,
-                    group: this.useGrouping ? record[this.targetGroup]: null
-                }
+                    icon: this.useCustomMarker ? record[this.targetImg] : null,
+                    group: this.useGrouping ? record[this.targetGroup] : null
+                };
             });
         }
         return [];
     }
+    
     get useCustomMarker(){
         return this.targetImg && this.targetImg.length > 1;
     }
+    
     get useGrouping(){
         return this.targetGroup && this.targetGroup.length > 1;
     }
+    
     get normalizedMarkerRotate(){
         return this.markerRotate && this.useCustomMarker;
     }
+    
     get mapDefaultPosition(){
         return [parseFloat(this.mapDefaultPositionLat), parseFloat(this.mapDefaultPositionLng)];
     }
@@ -79,34 +84,27 @@ export default class MapOfThings extends LightningElement {
         this.mapIsReady = true;
         this.initGetRecords();
     }
+    
     initGetRecords(){
         this.getRecords(records => {
-            this.records = records && records.length > 0 ? records: [];
+            this.records = records && records.length > 0 ? records : [];
             this.recordsAreReady = true;
             this.subscribeCdc();
         }, error => {
             this.alert(`${ERROR_MESSAGE_INIT_GET_RECORDS} - ${error.body.message}`);
         });
     }
+    
     subscribeCdc(){
         const messageCallback = () => {
             this.getRecords(
-                records => this.records = records && records.length > 0 ? records: [], 
+                records => this.records = records && records.length > 0 ? records : [], 
                 error => this.alert(`${ERROR_MESSAGE_INIT_GET_RECORDS_ON_CDC} - ${error.body.message}`)
             );
         };
         subscribe(this.cdcChannelName, -1, messageCallback).catch(error => {
             this.alert(`${ERROR_MESSAGE_INIT_CDC} - ${error.body.message}`);
         });
-    }
-
-    toggleShapeVisibility() {
-        this.showAllShapes = !this.showAllShapes;
-        // Pass the value to the map component
-        const mapElement = this.template.querySelector('c-map-of-things-map');
-        if (mapElement) {
-            mapElement.showAllShapes = this.showAllShapes;
-        }
     }
     
     getRecords(onGetRecords, onError){
@@ -120,7 +118,8 @@ export default class MapOfThings extends LightningElement {
             whereClause: this.whereClause
         }).then(onGetRecords).catch(onError);
     }
+    
     alert(message){
-        LightningAlert.open({label: ERROR_TITLE, message, theme: 'error'});
+        LightningAlert.open({ label: ERROR_TITLE, message, theme: 'error' });
     }
 }
