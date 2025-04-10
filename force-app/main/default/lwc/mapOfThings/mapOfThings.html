@@ -1,7 +1,7 @@
 <template>
     <lightning-card>
         <!-- Leaflet Map -->
-        <c-map-of-things-map 
+        <c-map-of-things-map
             oninit={initedMap}
             tile-server-url={tileServerUrl}
             tile-server-attribution={tileServerAttribution}
@@ -13,7 +13,7 @@
             shapefile-resource-name={shapefileResourceName}
             shapefile-color={shapefileColor}
             show-all-shapes={showAllShapes}>
-        </c-map-of-things-map>    
+        </c-map-of-things-map>
         
         <!-- Leaflet Marker Objects -->
         <c-map-of-things-markers
@@ -35,7 +35,7 @@
                     label="Show All Shapes"
                     variant={showAllShapes ? 'brand' : 'neutral'}
                     onclick={toggleShapeVisibility}
-                    title="Toggle whether to show all shapes or only those containing markers">
+                    title="Toggle shape visibility">
                 </lightning-button>
             </lightning-button-group>
         </div>
