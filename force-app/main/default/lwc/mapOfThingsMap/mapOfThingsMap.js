@@ -80,23 +80,25 @@ export default class MapOfThingsMap extends LightningElement {
         }
     }
 
-    async loadLeafletResources() {
-        try {
-            await Promise.all([
-                loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL),
-                loadScript(this, LEAFLET_JS + LEAFLET_JS_URL),
-                loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL),
-                loadScript(this, LEAFLET_JS + CATILINE_JS_URL),
-                loadScript(this, LEAFLET_JS + SHP_JS_URL),
-                loadScript(this, LEAFLET_JS + SHPFILE_ADDITIONAL_JS_URL)
-            ]);
-            this.leafletResourcesLoaded = true;
-            this.drawMap();
-        } catch (error) {
-            console.error('Error loading external libraries:', error);
-            this.showErrorToast('Error loading external libraries: ' + error.message);
-        }
+async loadLeafletResources() {
+    try {
+        // Always load the CSS first
+        await loadStyle(this, LEAFLET_JS + LEAFLET_CSS_URL);
+        // Then load the scripts sequentially so “L” is defined when addon code runs
+        await loadScript(this, LEAFLET_JS + LEAFLET_JS_URL);
+        await loadScript(this, LEAFLET_JS + LEAFLETADDON_JS_URL);
+        await loadScript(this, LEAFLET_JS + CATILINE_JS_URL);
+        await loadScript(this, LEAFLET_JS + SHP_JS_URL);
+        await loadScript(this, LEAFLET_JS + SHPFILE_ADDITIONAL_JS_URL);
+        
+        this.leafletResourcesLoaded = true;
+        this.drawMap();
+    } catch (error) {
+        console.error('Error loading external libraries:', error);
+        this.showErrorToast('Error loading external libraries: ' + error.message);
     }
+}
+
 
     handlePointerEvent(event) {
         if (!this.map) {
