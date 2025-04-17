@@ -5,7 +5,6 @@ const ROTATION_LEFT = 'left';
 const ROTATION_RIGHT = 'right';
 
 export default class MapOfThingsMarkers extends LightningElement {
-
     leafletMarker = {};
     isMoving = false;
     initedLayerControl = false;
@@ -133,6 +132,7 @@ export default class MapOfThingsMarkers extends LightningElement {
         this.leafletMarker[id] = { lat, lng, popup, angle, imgurl, marker, group };
         this.initLayerGroup(newMarker);
     }
+
     changeMarker(newMarker) {
         this.updatePopup(newMarker);
         this.updateLayerGroup(newMarker);

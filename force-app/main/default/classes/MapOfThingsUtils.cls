@@ -37,7 +37,7 @@ public with sharing class MapOfThingsUtils {
                 targets = database.query(q);
                 return targets;
             } else {
-                throw new MyException('Error occurred on quering SOQL. Some properties for Object name / Field names are wrong or missing.');
+                throw new MyException('Error occurred on querying SOQL. Some properties for Object name / Field names are wrong or missing.');
             }            
         } catch(Exception ex) {
             throw new MyException(ex.getMessage());

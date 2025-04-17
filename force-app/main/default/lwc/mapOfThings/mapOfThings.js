@@ -1,5 +1,4 @@
 import { LightningElement, api } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { subscribe } from 'lightning/empApi';
 import getRecords from '@salesforce/apex/MapOfThingsUtils.getRecords';
 import LightningAlert from 'lightning/alert';
@@ -10,13 +9,11 @@ const ERROR_MESSAGE_INIT_GET_RECORDS_ON_CDC = 'On getting records after detectin
 const ERROR_MESSAGE_INIT_CDC = 'On init subscribe Change Data Capture';
 
 export default class MapOfThings extends LightningElement {
-
     map;
     records = [];
-    propertiesChecked = false;
     mapIsReady = false;
     recordsAreReady = false;
-    
+
     @api tileServerUrl;
     @api tileServerAttribution;
     @api mapSizeY;
@@ -36,7 +33,12 @@ export default class MapOfThings extends LightningElement {
     @api moveDuration;
     @api autoFitBounds;
     @api markerZoomWithMap;
-    
+    @api showAllShapes = false; // This is now set via the design configuration
+
+    // *** New properties for configuring the shapefile ***
+    @api shapefileResourceName;  // Name of the static resource (e.g. "schooldistricts")
+    @api shapefileColor;         // Either a valid CSS color (e.g. "blue") or the value "random"
+
     get cdcChannelName(){
         if (this.targetObj){
             const str = this.targetObj.replace('__c', '__');
@@ -44,6 +46,7 @@ export default class MapOfThings extends LightningElement {
         }
         return '';
     }   
+    
     get markers(){
         if (this.recordsAreReady){
             return this.records.map(record => {
@@ -52,22 +55,26 @@ export default class MapOfThings extends LightningElement {
                     lat: parseFloat(record[this.targetLat]),
                     lng: parseFloat(record[this.targetLng]),
                     popup: record[this.targetExplain],
-                    icon: this.useCustomMarker ? record[this.targetImg]: null,
-                    group: this.useGrouping ? record[this.targetGroup]: null
-                }
+                    icon: this.useCustomMarker ? record[this.targetImg] : null,
+                    group: this.useGrouping ? record[this.targetGroup] : null
+                };
             });
         }
         return [];
     }
+    
     get useCustomMarker(){
         return this.targetImg && this.targetImg.length > 1;
     }
+    
     get useGrouping(){
         return this.targetGroup && this.targetGroup.length > 1;
     }
+    
     get normalizedMarkerRotate(){
         return this.markerRotate && this.useCustomMarker;
     }
+    
     get mapDefaultPosition(){
         return [parseFloat(this.mapDefaultPositionLat), parseFloat(this.mapDefaultPositionLng)];
     }
@@ -77,19 +84,21 @@ export default class MapOfThings extends LightningElement {
         this.mapIsReady = true;
         this.initGetRecords();
     }
+    
     initGetRecords(){
         this.getRecords(records => {
-            this.records = records && records.length > 0 ? records: [];
+            this.records = records && records.length > 0 ? records : [];
             this.recordsAreReady = true;
             this.subscribeCdc();
         }, error => {
             this.alert(`${ERROR_MESSAGE_INIT_GET_RECORDS} - ${error.body.message}`);
         });
     }
+    
     subscribeCdc(){
         const messageCallback = () => {
             this.getRecords(
-                records => this.records = records && records.length > 0 ? records: [], 
+                records => this.records = records && records.length > 0 ? records : [], 
                 error => this.alert(`${ERROR_MESSAGE_INIT_GET_RECORDS_ON_CDC} - ${error.body.message}`)
             );
         };
@@ -97,6 +106,7 @@ export default class MapOfThings extends LightningElement {
             this.alert(`${ERROR_MESSAGE_INIT_CDC} - ${error.body.message}`);
         });
     }
+    
     getRecords(onGetRecords, onError){
         getRecords({
             objectName: this.targetObj,
@@ -108,9 +118,8 @@ export default class MapOfThings extends LightningElement {
             whereClause: this.whereClause
         }).then(onGetRecords).catch(onError);
     }
+    
     alert(message){
-        const theme = 'error';
-        const label = ERROR_TITLE;
-        LightningAlert.open({label, message, theme});
+        LightningAlert.open({ label: ERROR_TITLE, message, theme: 'error' });
     }
 }

@@ -20,3 +20,14 @@
 .map-container .leaflet-control-layers {
     border: 1px solid rgba(220,20,0,1);
 }
+
+.map-container .shapefile-label span {
+    font-weight: bold;
+    color: black;
+    background: rgba(255, 255, 255, 0.5) !important;
+    padding: 2px 4px;
+    border-radius: 3px;
+    pointer-events: none;
+    user-select: none;
+    width: auto;
+}

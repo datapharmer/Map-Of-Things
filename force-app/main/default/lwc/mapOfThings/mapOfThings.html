@@ -1,7 +1,7 @@
 <template>
     <lightning-card>
         <!-- Leaflet Map -->
-        <c-map-of-things-map 
+        <c-map-of-things-map
             oninit={initedMap}
             tile-server-url={tileServerUrl}
             tile-server-attribution={tileServerAttribution}
@@ -10,13 +10,14 @@
             map-size-y={mapSizeY}
             auto-fit-bounds={autoFitBounds}
             markers={markers}
-        ></c-map-of-things-map>    
-        <!--/ Leaflet Map -->
-
+            shapefile-resource-name={shapefileResourceName}
+            shapefile-color={shapefileColor}
+            show-all-shapes={showAllShapes}>
+        </c-map-of-things-map>
+        
         <!-- Leaflet Marker Objects -->
         <c-map-of-things-markers
             map={map}
-            map-is-ready={mapIsReady}
             markers={markers}
             move-duration={moveDuration}
             marker-rotate={normalizedMarkerRotate}
@@ -24,8 +25,7 @@
             icon-size-y={iconSizeY}
             use-custom-marker={useCustomMarker}
             use-grouping={useGrouping}
-            marker-zoom-with-map={markerZoomWithMap}
-        ></c-map-of-things-markers>
-        <!--/ Leaflet Marker Objects -->
+            marker-zoom-with-map={markerZoomWithMap}>
+        </c-map-of-things-markers>
     </lightning-card>
 </template>
